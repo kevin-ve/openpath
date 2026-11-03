@@ -6,111 +6,166 @@
 <meta name="robots" content="noindex">
 <title>OpenPath Admin</title>
 <style>
-body{margin:0;font-family:system-ui,sans-serif;background:#f3f6f2;color:#10231c;line-height:1.5}
-.wrap{max-width:900px;margin:0 auto;padding:16px}
-input,select,textarea{width:100%;padding:10px;border:1px solid #c9d6cb;border-radius:8px;font:inherit;margin-bottom:8px}
-button{background:#0e5a43;color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer;margin:2px}
-button.red{background:#b3261e}button.tab{background:#fff;color:#10231c;border:1px solid #c9d6cb}
-.card{background:#fff;border:1px solid #dde5dc;border-radius:12px;padding:14px;margin-bottom:12px}
-.stat{display:inline-block;margin-right:20px}.stat b{font-size:1.4rem;display:block}
+:root{--navy:#0b1f3a;--blue:#1769e0;--sky:#e8f1fe;--sun:#ffc531;--ink:#0f1b2d;--muted:#5b6b82;--bg:#f2f5fa;--line:#e3e9f2;--red:#c62828;--green:#17803d}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+.top{background:var(--navy);color:#fff}.top .in{max-width:1000px;margin:0 auto;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.top b{font-size:1.2rem}.wrap{max-width:1000px;margin:0 auto;padding:18px}
+input,select,textarea{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:10px;font:inherit;margin-bottom:8px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:none}
+button{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);border:1px solid var(--line)}button.on{background:var(--navy);color:#fff}button.wa{background:#25d366}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.stat b{display:block;font-size:1.5rem;color:var(--navy)}.stat span{color:var(--muted);font-size:.9rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.8rem;font-weight:700;background:#fff4d6;color:#8a5a00}
+.badge.paid{background:#e6f6ec;color:var(--green)}.badge.in_progress{background:var(--sky);color:var(--blue)}.badge.completed{background:#e6f6ec;color:var(--green)}.badge.rejected{background:#fde8e8;color:var(--red)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 16px;font-size:.93rem;margin:10px 0}
+.msg{color:var(--red);font-size:.92rem;margin-top:8px}.muted{color:var(--muted)}
+.login{max-width:380px;margin:50px auto}
 </style>
 </head>
-<body><div class="wrap">
-<h2>OpenPath Admin</h2>
+<body>
+<div class="top"><div class="in"><b>OpenPath Admin</b><button class="gray" id="logoutBtn" style="display:none" onclick="logout()">Log out</button></div></div>
+<div class="wrap">
 
-<div id="login" class="card" style="max-width:360px">
-  <input id="em" type="email" placeholder="Admin email"><input id="pw" type="password" placeholder="Password">
-  <button onclick="signIn()">Log in</button> <span id="lerr"></span>
+<div id="login" class="card login">
+  <h3 style="margin-top:0">Admin login</h3>
+  <input id="em" type="email" placeholder="Admin email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key=='Enter')signIn()">
+  <button onclick="signIn()">Log in</button>
+  <div class="msg" id="lerr"></div>
 </div>
 
 <div id="app" style="display:none">
-  <div class="card" id="stats"></div>
-  <button class="tab" onclick="show('req')">Requests</button>
-  <button class="tab" onclick="show('opp')">Opportunities</button>
-  <button class="tab" onclick="show('svc')">Services</button>
-  <button class="red" onclick="db.auth.signOut().then(()=>location.reload())">Log out</button>
+  <div class="stats" id="stats"></div>
+  <div class="tabs">
+    <button class="on" id="t_req" onclick="show('req')">Requests</button>
+    <button class="gray" id="t_opp" onclick="show('opp')">Opportunities</button>
+    <button class="gray" id="t_svc" onclick="show('svc')">Services</button>
+  </div>
 
-  <div id="req"></div>
+  <div id="req">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <input id="rq" placeholder="Search name, phone, reference, MoMo ID" oninput="drawReq()">
+      <select id="rf" onchange="drawReq()"><option value="">All statuses</option><option>awaiting_verification</option><option>paid</option><option>in_progress</option><option>completed</option><option>rejected</option></select>
+    </div>
+    <div id="reqList"></div>
+  </div>
 
   <div id="opp" style="display:none">
-    <div class="card"><h3>Add opportunity</h3>
-      <input id="o_title" placeholder="Title"><select id="o_cat"><option>Scholarship</option><option>Job</option><option>Internship</option><option>Grant</option><option>Competition</option><option>Fellowship</option><option>Training</option></select>
-      <textarea id="o_desc" placeholder="Description"></textarea><input id="o_elig" placeholder="Eligibility"><input id="o_ben" placeholder="Benefits">
-      <input id="o_loc" placeholder="Location"><input id="o_dead" type="date"><input id="o_docs" placeholder="Required documents"><input id="o_link" placeholder="Official application link (https://…)">
-      <button onclick="addOpp()">Save opportunity</button></div>
+    <div class="card"><h3 style="margin-top:0">Add opportunity</h3>
+      <input id="o_title" placeholder="Title">
+      <select id="o_cat"><option>Scholarship</option><option>Job</option><option>Internship</option><option>Grant</option><option>Competition</option><option>Fellowship</option><option>Training</option></select>
+      <textarea id="o_desc" rows="3" placeholder="Short description"></textarea>
+      <input id="o_elig" placeholder="Eligibility"><input id="o_ben" placeholder="Benefits"><input id="o_loc" placeholder="Location (example: Rwanda, Online)">
+      <label class="muted">Deadline (leave empty if always open)</label><input id="o_dead" type="date">
+      <input id="o_docs" placeholder="Required documents"><input id="o_link" placeholder="Official application link (https://…)">
+      <button onclick="addOpp()">Save opportunity</button><div class="msg" id="oerr"></div></div>
     <div id="oppList"></div>
   </div>
 
   <div id="svc" style="display:none"><div id="svcList"></div></div>
-</div></div>
+</div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-const SB_URL="PASTE_SUPABASE_URL", SB_KEY="PASTE_ANON_PUBLIC_KEY";   // same as the site
-const db=supabase.createClient(SB_URL,SB_KEY);
+const SB_URL="PASTE_SUPABASE_URL", SB_KEY="PASTE_ANON_PUBLIC_KEY";   // same two values as index.html
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const STATUS=["awaiting_verification","paid","in_progress","completed","rejected"];
+let db,rows=[];
+
+if(SB_URL.includes("PASTE")||SB_KEY.includes("PASTE")){
+  $("lerr").textContent="Setup missing: put your Supabase URL and anon key at the top of admin.html (in the script).";
+} else if(typeof supabase==="undefined"){
+  $("lerr").textContent="Could not load the Supabase library. Check your internet connection.";
+} else { db=supabase.createClient(SB_URL,SB_KEY); start(); }
 
 async function signIn(){
-  const {error}=await db.auth.signInWithPassword({email:$("em").value,password:$("pw").value});
-  if(error){$("lerr").textContent="Wrong email or password";return;} start();
+  if(!db)return;
+  $("lerr").textContent="Logging in…";
+  const {error}=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
+  if(error){
+    let m=error.message;
+    if(/confirm/i.test(m)) m+=" → In Supabase open Authentication > Users, open your user and confirm the email (or delete the user and add it again with Auto Confirm ticked).";
+    if(/invalid login/i.test(m)) m+=" → Check email and password, or create the user in Supabase > Authentication > Users.";
+    $("lerr").textContent=m; return;
+  }
+  start();
 }
+async function logout(){await db.auth.signOut();location.reload();}
 async function start(){
   const {data}=await db.auth.getSession(); if(!data.session)return;
-  $("login").style.display="none"; $("app").style.display=""; loadAll();
+  $("login").style.display="none";$("app").style.display="";$("logoutBtn").style.display="";
+  loadReq();loadOpp();loadSvc();
 }
-function show(id){["req","opp","svc"].forEach(x=>$(x).style.display=x==id?"":"none");}
-async function loadAll(){ await Promise.all([loadReq(),loadOpp(),loadSvc()]); }
+function show(id){["req","opp","svc"].forEach(x=>{$(x).style.display=x==id?"":"none";$("t_"+x).className=x==id?"on":"gray";});}
 
 async function loadReq(){
-  const {data}=await db.from("requests").select("*").order("created_at",{ascending:false});
-  const rows=data||[];
+  const {data,error}=await db.from("requests").select("*").order("created_at",{ascending:false});
+  if(error){$("reqList").innerHTML=`<div class="card msg">Could not load requests: ${esc(error.message)}. Did you run schema.sql?</div>`;return;}
+  rows=data||[]; drawReq();
+}
+function drawReq(){
   const paid=rows.filter(r=>["paid","in_progress","completed"].includes(r.status));
-  const today=new Date().toISOString().slice(0,10), month=today.slice(0,7);
+  const month=new Date().toISOString().slice(0,7);
   const sum=a=>a.reduce((t,r)=>t+r.amount,0).toLocaleString();
-  $("stats").innerHTML=`<span class="stat"><b>${rows.filter(r=>r.status=="awaiting_verification").length}</b>to verify</span>
-   <span class="stat"><b>${sum(paid)} RWF</b>total revenue</span>
-   <span class="stat"><b>${sum(paid.filter(r=>r.created_at.startsWith(month)))} RWF</b>this month</span>`;
-  $("req").innerHTML=rows.map(r=>`<div class="card"><b>${esc(r.ref)}</b> | ${esc(r.service_name)} | ${r.amount.toLocaleString()} RWF<br>
-   ${esc(r.name)} | ${esc(r.phone)} | ${esc(r.email)} | via ${esc(r.contact_pref)}<br>
-   Opportunity: ${esc(r.opportunity)}<br>Documents: ${/^https?:\/\//.test(r.doc_link||"")?`<a href="${esc(r.doc_link)}" target="_blank" rel="noopener">open</a>`:esc(r.doc_link)}<br>
-   Message: ${esc(r.message)}<br><b>MoMo ID: ${esc(r.momo_txn)}</b> (match it with your SMS) | ${new Date(r.created_at).toLocaleString()}
-   <select id="s_${r.id}">${STATUS.map(s=>`<option ${s==r.status?"selected":""}>${s}</option>`).join("")}</select>
-   <input id="n_${r.id}" placeholder="Note shown to customer" value="${esc(r.admin_note)}">
+  $("stats").innerHTML=`<div class="stat"><b>${rows.filter(r=>r.status=="awaiting_verification").length}</b><span>to verify</span></div>
+   <div class="stat"><b>${rows.filter(r=>r.status=="in_progress").length}</b><span>in progress</span></div>
+   <div class="stat"><b>${sum(paid)} RWF</b><span>total revenue</span></div>
+   <div class="stat"><b>${sum(paid.filter(r=>r.created_at.startsWith(month)))} RWF</b><span>this month</span></div>`;
+  const q=$("rq").value.toLowerCase(), f=$("rf").value;
+  const list=rows.filter(r=>(!f||r.status==f)&&[r.name,r.phone,r.ref,r.momo_txn].join(" ").toLowerCase().includes(q));
+  $("reqList").innerHTML=list.map(r=>`<div class="card">
+   <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(r.ref)} · ${esc(r.service_name)}</b><span class="badge ${esc(r.status)}">${esc(r.status.replace("_"," "))}</span></div>
+   <div class="cols"><div><b>Customer:</b> ${esc(r.name)}</div><div><b>Phone:</b> ${esc(r.phone)}</div><div><b>Email:</b> ${esc(r.email)}</div>
+   <div><b>Reply via:</b> ${esc(r.contact_pref)}</div><div><b>Amount:</b> ${r.amount.toLocaleString()} RWF</div><div><b>MoMo ID:</b> ${esc(r.momo_txn)}</div>
+   <div><b>Opportunity:</b> ${esc(r.opportunity)}</div><div><b>Date:</b> ${new Date(r.created_at).toLocaleString()}</div>
+   <div><b>Documents:</b> ${/^https?:\/\//.test(r.doc_link||"")?`<a href="${esc(r.doc_link)}" target="_blank" rel="noopener">open link</a>`:esc(r.doc_link)}</div></div>
+   <div><b>Message:</b> ${esc(r.message)}</div>
+   <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:10px">
+    <select id="s_${r.id}">${STATUS.map(s=>`<option ${s==r.status?"selected":""}>${s}</option>`).join("")}</select>
+    <input id="n_${r.id}" placeholder="Note shown to customer" value="${esc(r.admin_note)}"></div>
    <button onclick="saveReq('${r.id}')">Save</button>
-   <a href="https://wa.me/${encodeURIComponent(r.phone.replace(/\D/g,""))}" target="_blank" rel="noopener"><button>WhatsApp</button></a></div>`).join("")||"<p>No requests yet.</p>";
+   <a href="https://wa.me/${encodeURIComponent((r.phone||"").replace(/\D/g,""))}" target="_blank" rel="noopener"><button class="wa">WhatsApp</button></a></div>`).join("")||'<p class="muted">No requests yet.</p>';
 }
 async function saveReq(id){
-  await db.from("requests").update({status:$("s_"+id).value,admin_note:$("n_"+id).value}).eq("id",id); loadReq();
+  const {error}=await db.from("requests").update({status:$("s_"+id).value,admin_note:$("n_"+id).value}).eq("id",id);
+  if(error)alert("Could not save: "+error.message); loadReq();
 }
 
 async function loadOpp(){
-  const {data}=await db.from("opportunities").select("*").order("created_at",{ascending:false});
-  $("oppList").innerHTML=(data||[]).map(o=>`<div class="card"><b>${esc(o.title)}</b> (${esc(o.category)}) | deadline ${esc(o.deadline||"open")} | ${o.published?"published":"hidden"}<br>
-   <button onclick="togglePub('${o.id}',${!o.published})">${o.published?"Hide":"Publish"}</button>
-   <button onclick="reverify('${o.id}')">Mark verified today</button>
-   <button class="red" onclick="delOpp('${o.id}')">Delete</button></div>`).join("");
+  const {data,error}=await db.from("opportunities").select("*").order("created_at",{ascending:false});
+  if(error){$("oppList").innerHTML=`<div class="card msg">${esc(error.message)}</div>`;return;}
+  $("oppList").innerHTML=(data||[]).map(o=>`<div class="card"><b>${esc(o.title)}</b> · ${esc(o.category)} · deadline ${esc(o.deadline||"open")} · verified ${esc(o.verified_at)} · <span class="badge ${o.published?"paid":""}">${o.published?"published":"hidden"}</span><br><br>
+   <button class="gray" onclick="togglePub('${o.id}',${!o.published})">${o.published?"Hide":"Publish"}</button>
+   <button class="gray" onclick="reverify('${o.id}')">Mark verified today</button>
+   <button class="red" onclick="delOpp('${o.id}')">Delete</button></div>`).join("")||'<p class="muted">No opportunities yet. Add your first one above.</p>';
 }
 async function addOpp(){
-  const {error}=await db.from("opportunities").insert({title:$("o_title").value,category:$("o_cat").value,description:$("o_desc").value,
+  $("oerr").textContent="";
+  if(!$("o_title").value.trim()){$("oerr").textContent="Title is required.";return;}
+  const {error}=await db.from("opportunities").insert({title:$("o_title").value.trim(),category:$("o_cat").value,description:$("o_desc").value,
    eligibility:$("o_elig").value,benefits:$("o_ben").value,location:$("o_loc").value,deadline:$("o_dead").value||null,
    required_docs:$("o_docs").value,link:$("o_link").value});
-  if(error){alert("Could not save: "+error.message);return;}
-  document.querySelectorAll("#opp input,#opp textarea").forEach(i=>i.value=""); loadOpp();
+  if(error){$("oerr").textContent="Could not save: "+error.message;return;}
+  document.querySelectorAll("#opp input,#opp textarea").forEach(i=>i.value="");loadOpp();
 }
 async function togglePub(id,v){await db.from("opportunities").update({published:v}).eq("id",id);loadOpp();}
 async function reverify(id){await db.from("opportunities").update({verified_at:new Date().toISOString().slice(0,10)}).eq("id",id);loadOpp();}
 async function delOpp(id){if(confirm("Delete this opportunity?")){await db.from("opportunities").delete().eq("id",id);loadOpp();}}
 
 async function loadSvc(){
-  const {data}=await db.from("services").select("*").order("price");
-  $("svcList").innerHTML=(data||[]).map(s=>`<div class="card"><b>${esc(s.name)}</b>
-   <input id="p_${s.id}" type="number" value="${s.price}"> <label><input type="checkbox" id="a_${s.id}" ${s.active?"checked":""} style="width:auto"> active</label>
-   <button onclick="saveSvc('${s.id}')">Save</button></div>`).join("");
+  const {data,error}=await db.from("services").select("*").order("price");
+  if(error){$("svcList").innerHTML=`<div class="card msg">${esc(error.message)}</div>`;return;}
+  $("svcList").innerHTML=(data||[]).map(s=>`<div class="card"><b>${esc(s.name)}</b><br><br>
+   <input id="p_${s.id}" type="number" value="${s.price}" style="max-width:200px"> RWF
+   <label style="margin-left:12px"><input type="checkbox" id="a_${s.id}" ${s.active?"checked":""} style="width:auto;margin:0 6px 0 0">active</label>
+   <br><button onclick="saveSvc('${s.id}')">Save</button></div>`).join("");
 }
 async function saveSvc(id){await db.from("services").update({price:+$("p_"+id).value,active:$("a_"+id).checked}).eq("id",id);loadSvc();}
-start();
 </script>
 </body>
 </html>
