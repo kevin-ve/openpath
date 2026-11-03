@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenPath – Discover opportunities. Unlock your potential.</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f8f3;--card:#fff;--ink:#10231c;--muted:#5a6b63;--green:#0e5a43;--sun:#f4b400;--line:#dde5dc}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1713;--card:#15241d;--ink:#eef4ef;--muted:#9bb0a5;--green:#3fbf94;--line:#24382f}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5}
+header .wrap{display:flex;justify-content:space-between;align-items:center;height:60px}
+.logo{font-weight:800;font-size:1.3rem;color:var(--green);text-decoration:none}
+nav a{margin-left:16px;color:var(--ink);text-decoration:none;font-weight:600}
+h1{font-size:clamp(2.2rem,7vw,3.6rem);line-height:1.05;margin:44px 0 14px;font-weight:800;max-width:14ch}
+h2{font-size:1.8rem;margin:0 0 6px}.sub,.muted{color:var(--muted)}
+section{padding:36px 0}
+input,select,textarea{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;font:inherit;background:var(--card);color:var(--ink);margin-bottom:10px}
+.btn{background:var(--green);color:#fff;border:0;border-radius:12px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.alt{background:var(--sun);color:#10231c}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.chips button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 14px;border-radius:99px;font:inherit;cursor:pointer}
+.chips button.on{background:var(--green);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{margin:4px 0 6px}.card p{margin:0 0 10px;font-size:.95rem}
+.price{font-weight:800;color:var(--green)}
+dialog{border:0;border-radius:16px;max-width:460px;width:92%;padding:22px;background:var(--bg);color:var(--ink)}
+.note{background:var(--card);border-left:4px solid var(--sun);padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:.95rem}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="logo" href="#top">OpenPath</a>
+  <nav><a href="#opps">Opportunities</a><a href="#services">Services</a><a href="#track">Track</a></nav>
+</div></header>
+
+<main id="top"><div class="wrap">
+  <h1>Find the opportunity. We help you win it.</h1>
+  <p class="sub">Browse scholarships, jobs, grants and programmes for free. Pay only for the help you ask for.</p>
+
+  <section id="opps">
+    <h2>Opportunities</h2>
+    <input id="q" type="search" placeholder="Search opportunities…" aria-label="Search" oninput="drawOpps()">
+    <div class="chips" id="chips"></div>
+    <div class="grid" id="oppGrid"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section id="services">
+    <h2>Help with your application</h2>
+    <p class="sub">No account needed. Pick a service and pay with MoMo.</p>
+    <div class="grid" id="serviceGrid"></div>
+  </section>
+
+  <section id="track">
+    <h2>Track your request</h2>
+    <div style="max-width:420px">
+      <input id="tRef" placeholder="Reference (example: OP-AB12CD)">
+      <input id="tPhone" placeholder="Phone number you used">
+      <button class="btn" onclick="track()">Check status</button>
+      <p id="tOut" class="muted"></p>
+    </div>
+  </section>
+</div></main>
+
+<footer><div class="wrap"><strong>OpenPath</strong> – Discover opportunities. Unlock your potential.<br>Musanze, Rwanda</div></footer>
+
+<dialog id="dlg">
+  <h3 style="margin-top:0">Request help</h3>
+  <form id="f" onsubmit="send(event)">
+    <select name="service" id="svSel" onchange="showPay()" required></select>
+    <input name="opp" id="oppIn" placeholder="Opportunity (name or link)">
+    <input name="name" placeholder="Full name" required>
+    <input name="phone" placeholder="Phone (WhatsApp)" required>
+    <input name="email" type="email" placeholder="Email (optional)">
+    <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
+    <input name="doc" placeholder="Link to your documents (Google Drive, set to anyone with link)">
+    <textarea name="msg" rows="2" placeholder="Anything we should know?"></textarea>
+    <div class="note" id="payNote"></div>
+    <input name="txn" placeholder="MoMo transaction ID (FT Id from the SMS)" required>
+    <button class="btn" id="sendBtn">Send request</button>
+    <button class="btn alt" type="button" onclick="dlg.close()">Cancel</button>
+  </form>
+  <p id="fOut"></p>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ===== EDIT THESE 4 LINES =====
+const SB_URL="PASTE_SUPABASE_URL", SB_KEY="PASTE_ANON_PUBLIC_KEY";
+const MOMO="07XXXXXXXX";        // your MoMo number customers pay to
+const WA="2507XXXXXXXX";        // your WhatsApp number (country code, no +)
+// ==============================
+const db=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CATS=["All","Scholarship","Job","Internship","Grant","Competition","Fellowship","Training"];
+let opps=[],services=[],cat="All";
+
+async function load(){
+  const o=await db.from("opportunities").select("*").order("deadline",{nullsFirst:false});
+  const s=await db.from("services").select("*").order("price");
+  opps=o.data||[]; services=s.data||[];
+  $("chips").innerHTML=CATS.map(c=>`<button class="${c==cat?"on":""}" onclick="cat='${c}';load2()">${c}</button>`).join("");
+  drawOpps(); drawServices();
+}
+function load2(){ $("chips").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.textContent==cat)); drawOpps(); }
+
+function drawOpps(){
+  const q=$("q").value.toLowerCase();
+  const list=opps.filter(o=>(cat=="All"||o.category==cat)&&((o.title||"")+(o.description||"")).toLowerCase().includes(q));
+  $("oppGrid").innerHTML=list.length?list.map(o=>`
+   <div class="card"><small class="muted">${esc(o.category)}</small><h3>${esc(o.title)}</h3>
+   <p>${esc(o.description)}</p>
+   <p class="muted">${esc(o.location)} | Deadline: ${esc(o.deadline||"Open")} | Verified: ${esc(o.verified_at)}</p>
+   <details><summary>Details</summary>
+     <p><b>Eligibility:</b> ${esc(o.eligibility)}</p><p><b>Benefits:</b> ${esc(o.benefits)}</p><p><b>Documents:</b> ${esc(o.required_docs)}</p></details>
+   <p style="margin-top:10px">${/^https?:\/\//.test(o.link||"")?`<a class="btn" href="${esc(o.link)}" target="_blank" rel="noopener">Official link</a> `:""}
+   <button class="btn alt" onclick="openReq('${esc(o.title).replace(/'/g,"")}')">Get help</button></p></div>`).join(""):'<p class="muted">No opportunities found yet.</p>';
+}
+function drawServices(){
+  $("serviceGrid").innerHTML=services.map(s=>`<div class="card"><h3>${esc(s.name)}</h3><p>${esc(s.description)}</p>
+   <p><span class="price">${Number(s.price).toLocaleString()} RWF</span></p><button class="btn" onclick="openReq('','${esc(s.id)}')">Request</button></div>`).join("");
+  $("svSel").innerHTML=services.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} – ${Number(s.price).toLocaleString()} RWF</option>`).join("");
+}
+function showPay(){
+  const s=services.find(x=>x.id==$("svSel").value); if(!s)return;
+  $("payNote").innerHTML=`Send <b>${Number(s.price).toLocaleString()} RWF</b> to MoMo <b>${esc(MOMO)}</b>, then type the transaction ID from the SMS below.`;
+}
+function openReq(opp,sid){ $("fOut").textContent=""; $("f").style.display=""; $("oppIn").value=opp||""; if(sid)$("svSel").value=sid; showPay(); $("dlg").showModal(); }
+
+async function send(e){
+  e.preventDefault(); const f=e.target, s=services.find(x=>x.id==f.service.value);
+  const ref="OP-"+Math.random().toString(36).slice(2,8).toUpperCase();
+  $("sendBtn").disabled=true;
+  const {error}=await db.from("requests").insert({ref,service_name:s.name,amount:s.price,opportunity:f.opp.value,
+    name:f.name.value,phone:f.phone.value.trim(),email:f.email.value,contact_pref:f.pref.value,
+    doc_link:f.doc.value,message:f.msg.value,momo_txn:f.txn.value.trim()});
+  $("sendBtn").disabled=false;
+  if(error){ $("fOut").textContent=error.code=="23505"?"This transaction ID was already used. Check it and try again.":"Could not send. Check your internet and try again."; return; }
+  f.style.display="none";
+  $("fOut").innerHTML=`<b>Request sent.</b><br>Your reference: <b>${ref}</b><br>Save it. We verify your payment, then start. Use Track with your reference and phone.<br><a class="btn" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ref)}">Message us on WhatsApp</a>`;
+  f.reset();
+}
+const LABEL={awaiting_verification:"Waiting for payment check",paid:"Payment confirmed",in_progress:"We are working on it",completed:"Completed",rejected:"Payment not found. Contact us"};
+async function track(){
+  const {data,error}=await db.rpc("track_request",{p_ref:$("tRef").value,p_phone:$("tPhone").value});
+  const r=data&&data[0];
+  $("tOut").innerHTML=error||!r?"Nothing found. Check the reference and phone.":`<b>${esc(r.service_name)}</b>: ${esc(LABEL[r.status]||r.status)}${r.admin_note?"<br>"+esc(r.admin_note):""}`;
+}
+load();
+</script>
+</body>
+</html>
