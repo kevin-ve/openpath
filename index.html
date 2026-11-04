@@ -22,7 +22,7 @@ nav{display:flex;align-items:center;gap:20px}nav a{text-decoration:none;font-wei
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .hero{background:var(--navy);color:#fff;position:relative;overflow:hidden}
 .hero .wrap{padding-top:64px;padding-bottom:84px;position:relative;z-index:1}
-.hero h1{font-size:clamp(2.4rem,8vw,4.4rem);line-height:1.02;margin:0 0 18px;font-weight:800;max-width:15ch;letter-spacing:-.02em}
+.hero h1{font-size:clamp(1.1rem,4.4vw,3.2rem);line-height:1.1;margin:0 0 18px;font-weight:800;white-space:nowrap;letter-spacing:-.02em}
 .hero p{color:#b9c8de;font-size:1.15rem;max-width:48ch;margin:0 0 28px}
 .searchbar{display:flex;gap:8px;background:#fff;border-radius:16px;padding:8px;max-width:600px;box-shadow:0 18px 40px rgba(0,0,0,.25)}
 .searchbar input{flex:1;border:0;font:inherit;padding:10px 14px;background:transparent;color:var(--ink);min-width:0}
@@ -67,6 +67,11 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 .card.star{box-shadow:0 8px 28px rgba(15,27,45,.14)}.card .cover{width:calc(100% + 40px);margin:-20px -20px 14px;height:150px;object-fit:cover}
 .bdg{color:#fff;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:99px}
 .docs{margin:0 0 10px;padding-left:18px}.docs li{margin-bottom:6px}.tl{display:inline-block;margin-left:4px;font-size:.82rem;font-weight:700;background:var(--sky);color:var(--blue);padding:2px 10px;border-radius:99px;text-decoration:none}
+#applyPage{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto}#applyPage[hidden]{display:none}
+.ap-top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:2}.ap-top .wrap{display:flex;align-items:center;gap:12px;height:60px}.ap-top b{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ap-body{max-width:640px;padding-top:22px;padding-bottom:70px}.ap-body .card{margin-bottom:14px}
+.steps3{display:flex;gap:6px;margin-bottom:16px;font-size:.8rem;font-weight:700}.steps3 span{flex:1;text-align:center;padding:8px 4px;border-radius:10px;background:#e9eef6;color:var(--muted)}.steps3 span.on{background:var(--navy);color:#fff}
+.okbox{background:#e6f6ec;border-left:4px solid #17803d;padding:10px 12px;border-radius:8px;margin-bottom:14px}
 @media(max-width:640px){nav a:not(.btn){display:none}.hero svg{display:none}}
 </style>
 </head>
@@ -127,6 +132,11 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <footer><div class="wrap"><b>OpenPath</b> – Discover opportunities. Unlock your potential.<br>Musanze, Rwanda</div></footer>
 <a class="wa" id="waBtn" href="#" target="_blank" rel="noopener">WhatsApp us</a>
 
+<section id="applyPage" hidden>
+  <div class="ap-top"><div class="wrap"><button class="btn sm ghost" onclick="closeApply()">← Back</button><b id="apTitle"></b></div></div>
+  <div class="wrap ap-body" id="apBody"></div>
+</section>
+
 <dialog id="dlg">
   <h3 id="dlgTitle" style="margin:0 0 14px;font-size:1.3rem">Request help</h3>
   <form id="f" onsubmit="send(event)">
@@ -149,9 +159,9 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 // ===== EDIT THESE LINES =====
-const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";
-const MOMO="1940525";        // your MoMo number customers pay to
-const WA="250791294492";        
+const SB_URL="PASTE_SUPABASE_URL", SB_KEY="PASTE_ANON_PUBLIC_KEY";
+const MOMO="07XXXXXXXX";        // your MoMo number customers pay to
+const WA="2507XXXXXXXX";        // your WhatsApp number (country code, no +)
 // ============================
 const db=supabase.createClient(SB_URL,SB_KEY);
 const $=id=>document.getElementById(id);
@@ -178,9 +188,7 @@ function setCat(c){cat=c;$("chips").querySelectorAll("button").forEach(b=>b.clas
 function docsHtml(o){
   const docs=Array.isArray(o.docs)?o.docs:[];
   if(!docs.length)return o.required_docs?`<p><b>Documents:</b> ${esc(o.required_docs)}</p>`:"";
-  return `<p><b>Documents you need:</b></p><ul class="docs">`+docs.map(d=>{
-    const t=tools[d.tool], u=t&&safeUrl(t.url);
-    return `<li>${esc(d.name)}${u?` <a class="tl" href="${esc(u)}" target="_blank" rel="noopener">Create with ${esc(t.name)}</a>`:""}</li>`;}).join("")+`</ul>`;
+  return `<p><b>Documents you need:</b></p><ul class="docs">`+docs.map(d=>`<li>${esc(d.name)}</li>`).join("")+`</ul><p class="muted">Tools and full instructions unlock when you apply.</p>`;
 }
 function drawOpps(){
   const q=$("q").value.toLowerCase();
@@ -193,10 +201,9 @@ function drawOpps(){
    <div class="row"><span><span class="tag" style="background:${c}1f;color:${c}">${esc(o.icon||"")} ${esc(o.category)}</span>${o.badge?` <span class="bdg" style="background:${c}">${esc(o.badge)}</span>`:""}</span>
    <span class="days ${d!==null&&d<=7?"soon":""}">${d===null?"Open":d==0?"Last day":d+" days left"}</span></div>
    <h3>${esc(o.title)}</h3><p class="desc">${esc(o.description)}</p>
-   <div class="meta">${esc(o.location||"")}${o.verified_at?" · Verified "+esc(o.verified_at):""}</div>
+   <div class="meta">${esc(o.location||"")}${o.verified_at?" · Verified "+esc(o.verified_at):""}${o.price>0?" · Help fee "+Number(o.price).toLocaleString()+" RWF":""}</div>
    <details><summary>What you need to apply</summary><p><b>Eligibility:</b> ${esc(o.eligibility)}</p><p><b>Benefits:</b> ${esc(o.benefits)}</p>${docsHtml(o)}${secs}</details>
-   <div class="actions">${safeUrl(o.link)?`<a class="btn sm ghost" href="${esc(o.link)}" target="_blank" rel="noopener">Official link</a>`:""}
-   ${o.price>0?`<button class="btn sm" style="background:${c}" onclick="openOpp('${esc(o.id)}')">${esc(o.cta_text||"Get application help")} · ${Number(o.price).toLocaleString()} RWF</button>`:`<a class="btn sm" style="background:${c}" href="https://wa.me/${WA}" target="_blank" rel="noopener">Ask for a price</a>`}</div></div>`;}).join(""):'<p class="muted">No opportunities found yet. Check back soon.</p>';
+   <div class="actions"><button class="btn sm" style="background:${c}" onclick="openApply('${esc(o.id)}')">${esc(o.cta_text||"Apply")}</button></div></div>`;}).join(""):'<p class="muted">No opportunities found yet. Check back soon.</p>';
 }
 function drawServices(){
   const top=services.length?services[services.length-1].id:"";
@@ -238,6 +245,78 @@ async function track(){
   const {data,error}=await db.rpc("track_request",{p_ref:$("tRef").value,p_phone:$("tPhone").value});
   const r=data&&data[0];
   $("tOut").innerHTML=error||!r?"Nothing found. Check the reference and phone.":`<b>${esc(r.service_name)}</b>: ${esc(LABEL[r.status]||r.status)}${r.admin_note?"<br>"+esc(r.admin_note):""}`;
+  if(r){ const p=await db.rpc("get_apply_pack",{p_ref:$("tRef").value,p_phone:$("tPhone").value});
+    if(p.data){ window._pk=p.data; $("tOut").innerHTML+='<br><br><button class="btn" onclick="openPack()">Open apply resources</button>'; } }
+}
+
+/* ---------- Apply page: details -> payment -> locked resources ---------- */
+let ap=null, apTimer=null;
+function showApply(title){ $("apTitle").textContent=title||""; $("applyPage").hidden=false; $("applyPage").scrollTop=0; document.body.style.overflow="hidden"; }
+function closeApply(){ clearInterval(apTimer); $("applyPage").hidden=true; document.body.style.overflow=""; }
+function steps(n){ return `<div class="steps3"><span class="${n==1?"on":""}">1 Your details</span><span class="${n==2?"on":""}">2 Payment</span><span class="${n==3?"on":""}">3 Apply resources</span></div>`; }
+function openApply(id){
+  const o=opps.find(x=>x.id==id); if(!o)return; ap={o,info:null}; showApply(o.title);
+  if(!(o.price>0)){ $("apBody").innerHTML=`<div class="card"><h3 style="margin-top:0">Price not set yet</h3><p>Message us and we will give you the price for this application.</p><a class="btn" href="https://wa.me/${WA}" target="_blank" rel="noopener">WhatsApp us</a></div>`; return; }
+  apForm();
+}
+function apForm(){
+  const o=ap.o, i=ap.info||{};
+  $("apBody").innerHTML=steps(1)+`<div class="card"><h3 style="margin-top:0">${esc(o.title)}</h3>
+   <p class="muted">${esc(o.category)} · Deadline: ${esc(o.deadline||"Open")} · Help fee: <b>${Number(o.price).toLocaleString()} RWF</b></p>
+   <p>Fill in your details and pay. Then you unlock the step-by-step instructions, all the resources and the tools you need to apply.</p></div>
+   <form class="card" onsubmit="apNext(event)">
+    <input name="name" placeholder="Full name" value="${esc(i.name)}" required>
+    <input name="phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
+    <input name="email" type="email" placeholder="Email (optional)" value="${esc(i.email)}">
+    <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
+    <input name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
+    <textarea name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
+    <button class="btn">Continue to payment</button></form>`;
+}
+function apNext(e){
+  e.preventDefault(); const f=e.target;
+  ap.info={name:f.name.value,phone:f.phone.value.trim(),email:f.email.value,pref:f.pref.value,doc:f.doc.value,msg:f.msg.value};
+  $("applyPage").scrollTop=0; apPay();
+}
+function apPay(){
+  $("apBody").innerHTML=steps(2)+`<form class="card" onsubmit="apSubmit(event)"><h3 style="margin-top:0">Pay ${Number(ap.o.price).toLocaleString()} RWF</h3>
+   <div class="note">Send <b>${Number(ap.o.price).toLocaleString()} RWF</b> with MoMo to <b>${esc(MOMO)}</b>, from the number <b>${esc(ap.info.phone)}</b>. Then type the transaction ID (FT Id) from the MoMo SMS. Your payment is confirmed automatically.</div>
+   <input name="txn" placeholder="MoMo transaction ID (FT Id)" required>
+   <button class="btn" id="apBtn">I have paid, unlock</button> <button class="btn ghost" type="button" onclick="apForm()">Back</button><p id="apErr" class="muted"></p></form>`;
+}
+async function apSubmit(e){
+  e.preventDefault(); const i=ap.info, txn=e.target.txn.value;
+  const ref="OP-"+Math.random().toString(36).slice(2,8).toUpperCase(); $("apBtn").disabled=true;
+  const {error}=await db.rpc("submit_request",{p_ref:ref,p_service_id:null,p_opp_id:ap.o.id,p_opp_note:"",p_name:i.name,p_phone:i.phone,p_email:i.email,p_pref:i.pref,p_doc:i.doc,p_msg:i.msg,p_txn:txn});
+  $("apBtn").disabled=false;
+  if(error){ $("apErr").textContent=error.code=="23505"?"This transaction ID was already used. Check it and try again.":"Could not send: "+error.message; return; }
+  ap.ref=ref; apWait(); apTimer=setInterval(apCheck,7000); apCheck();
+}
+function apWait(){
+  $("applyPage").scrollTop=0;
+  $("apBody").innerHTML=steps(3)+`<div class="card"><h3 style="margin-top:0">Checking your payment…</h3>
+   <p>Your reference: <b style="font-size:1.3rem">${esc(ap.ref)}</b><br>Save it. You can come back any time with Track (reference + phone).</p>
+   <p>Status: <b id="apStatus">Waiting for payment check</b></p><p class="muted">This page updates by itself. It usually takes less than a minute.</p>
+   <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ap.ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a></div>`;
+}
+async function apCheck(){
+  const {data}=await db.rpc("get_apply_pack",{p_ref:ap.ref,p_phone:ap.info?ap.info.phone:ap.phone});
+  if(data){ clearInterval(apTimer); apPack(data); return; }
+  const t=await db.rpc("track_request",{p_ref:ap.ref,p_phone:ap.info?ap.info.phone:ap.phone}), r=t.data&&t.data[0];
+  if(r&&$("apStatus"))$("apStatus").textContent=LABEL[r.status]||r.status;
+  if(r&&r.status=="rejected")clearInterval(apTimer);
+}
+function openPack(){ ap={ref:$("tRef").value.trim().toUpperCase(),phone:$("tPhone").value.trim()}; showApply(window._pk.title); apPack(window._pk); }
+function apPack(d){
+  const docs=(d.docs||[]).map(x=>`<li>${esc(x.name)}${safeUrl(x.tool_url)?` <a class="tl" href="${esc(x.tool_url)}" target="_blank" rel="noopener">Create with ${esc(x.tool_name)}</a>`:""}</li>`).join("");
+  const res=(d.resources||[]).filter(x=>safeUrl(x.url)).map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("");
+  $("applyPage").scrollTop=0;
+  $("apBody").innerHTML=steps(3)+`<div class="okbox">Payment confirmed. Your reference: <b>${esc(ap.ref)}</b>. Save it to come back from Track.</div>
+   <div class="card"><h3 style="margin-top:0">How to apply</h3><div style="white-space:pre-wrap">${esc(d.instructions||"Instructions are being added. Message us on WhatsApp and we will guide you.")}</div></div>
+   ${docs?`<div class="card"><h3 style="margin-top:0">Documents you need</h3><ul class="docs">${docs}</ul></div>`:""}
+   ${res?`<div class="card"><h3 style="margin-top:0">Resources</h3><ul class="docs">${res}</ul></div>`:""}
+   ${safeUrl(d.apply_link)?`<p><a class="btn" href="${esc(d.apply_link)}" target="_blank" rel="noopener">Go to the official application</a></p>`:""}
+   <p class="muted">Need help with your documents? <a href="https://wa.me/${WA}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`;
 }
 load();
 </script>
