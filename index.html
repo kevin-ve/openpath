@@ -63,6 +63,10 @@ dialog::backdrop{background:rgba(11,31,58,.6)}
 .note{background:#fff8e1;border-left:4px solid var(--sun);padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:.95rem}
 footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}footer b{color:#fff}
 .wa{position:fixed;right:16px;bottom:16px;z-index:30;background:#25d366;color:#fff;border-radius:99px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.card{position:relative;overflow:hidden}.card::after{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--ac,transparent)}
+.card.star{box-shadow:0 8px 28px rgba(15,27,45,.14)}.card .cover{width:calc(100% + 40px);margin:-20px -20px 14px;height:150px;object-fit:cover}
+.bdg{color:#fff;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:99px}
+.docs{margin:0 0 10px;padding-left:18px}.docs li{margin-bottom:6px}.tl{display:inline-block;margin-left:4px;font-size:.82rem;font-weight:700;background:var(--sky);color:var(--blue);padding:2px 10px;border-radius:99px;text-decoration:none}
 @media(max-width:640px){nav a:not(.btn){display:none}.hero svg{display:none}}
 </style>
 </head>
@@ -124,12 +128,12 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <a class="wa" id="waBtn" href="#" target="_blank" rel="noopener">WhatsApp us</a>
 
 <dialog id="dlg">
-  <h3 style="margin:0 0 14px;font-size:1.3rem">Request help</h3>
+  <h3 id="dlgTitle" style="margin:0 0 14px;font-size:1.3rem">Request help</h3>
   <form id="f" onsubmit="send(event)">
-    <select name="service" id="svSel" onchange="showPay()" required></select>
+    <div id="svWrap"><select name="service" id="svSel" onchange="showPay()"></select></div>
     <input name="opp" id="oppIn" placeholder="Opportunity (name or link)">
     <input name="name" placeholder="Full name" required>
-    <input name="phone" placeholder="Phone (WhatsApp)" required>
+    <input name="phone" placeholder="Your MoMo phone number (the one you pay from)" required>
     <input name="email" type="email" placeholder="Email (optional)">
     <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
     <input name="doc" placeholder="Link to your documents (Google Drive, anyone with link)">
@@ -145,64 +149,88 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 // ===== EDIT THESE LINES =====
-const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";
-const MOMO="1940525";        // your MoMo number customers pay to
-const WA="+250791294492";        // your WhatsApp number (country code, no +)
+const SB_URL="PASTE_SUPABASE_URL", SB_KEY="PASTE_ANON_PUBLIC_KEY";
+const MOMO="07XXXXXXXX";        // your MoMo number customers pay to
+const WA="2507XXXXXXXX";        // your WhatsApp number (country code, no +)
 // ============================
 const db=supabase.createClient(SB_URL,SB_KEY);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const CATS=["All","Scholarship","Job","Internship","Grant","Competition","Fellowship","Training"];
-let opps=[],services=[],cat="All";
+const safeColor=c=>/^#[0-9a-fA-F]{6}$/.test(c||"")?c:"#1769e0";
+const safeUrl=u=>/^https?:\/\//.test(u||"")?u:"";
+let opps=[],services=[],tools={},cat="All",cur=null;   // cur = opportunity being requested
 $("waBtn").href="https://wa.me/"+WA;
 
 function daysLeft(d){ if(!d)return null; return Math.ceil((new Date(d+"T23:59:59")-new Date())/864e5); }
 async function load(){
-  const o=await db.from("opportunities").select("*").order("deadline",{nullsFirst:false});
-  const s=await db.from("services").select("*").order("price");
+  const [o,s,t]=await Promise.all([db.from("opportunities").select("*"),db.from("services").select("*").order("price"),db.from("tools").select("*")]);
   if(o.error){ $("oppGrid").innerHTML='<p class="muted">Could not load. Check your Supabase URL and key.</p>'; return; }
-  opps=(o.data||[]).filter(x=>{const d=daysLeft(x.deadline);return d===null||d>=0;});
-  services=s.data||[];
+  opps=(o.data||[]).filter(x=>{const d=daysLeft(x.deadline);return d===null||d>=0;})
+    .sort((a,b)=>(Number(b.featured)-Number(a.featured))||((a.sort_order||0)-(b.sort_order||0))||((a.deadline||"9999").localeCompare(b.deadline||"9999")));
+  services=s.data||[]; tools={}; (t.data||[]).forEach(x=>tools[x.key]=x);
   $("nOpps").textContent=opps.length;
-  $("chips").innerHTML=CATS.map(c=>`<button class="${c==cat?"on":""}" onclick="setCat('${c}')">${c}</button>`).join("");
+  const cats=["All",...new Set(opps.map(o=>o.category))];
+  $("chips").innerHTML=cats.map(c=>`<button class="${c==cat?"on":""}" onclick="setCat(this.textContent)">${esc(c)}</button>`).join("");
   drawOpps(); drawServices();
 }
 function setCat(c){cat=c;$("chips").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.textContent==c));drawOpps();}
+
+function docsHtml(o){
+  const docs=Array.isArray(o.docs)?o.docs:[];
+  if(!docs.length)return o.required_docs?`<p><b>Documents:</b> ${esc(o.required_docs)}</p>`:"";
+  return `<p><b>Documents you need:</b></p><ul class="docs">`+docs.map(d=>{
+    const t=tools[d.tool], u=t&&safeUrl(t.url);
+    return `<li>${esc(d.name)}${u?` <a class="tl" href="${esc(u)}" target="_blank" rel="noopener">Create with ${esc(t.name)}</a>`:""}</li>`;}).join("")+`</ul>`;
+}
 function drawOpps(){
   const q=$("q").value.toLowerCase();
   const list=opps.filter(o=>(cat=="All"||o.category==cat)&&((o.title||"")+" "+(o.description||"")).toLowerCase().includes(q));
-  $("oppGrid").innerHTML=list.length?list.map((o,i)=>{const d=daysLeft(o.deadline);
-   return `<div class="card"><div class="row"><span class="tag ${esc(o.category)}">${esc(o.category)}</span>
+  $("oppGrid").innerHTML=list.length?list.map(o=>{
+   const d=daysLeft(o.deadline), c=safeColor(o.accent), img=safeUrl(o.cover_url);
+   const secs=(Array.isArray(o.sections)?o.sections:[]).map(s=>`<p><b>${esc(s.title)}:</b> ${esc(s.body)}</p>`).join("");
+   return `<div class="card ${o.featured?"star":""}" style="--ac:${c}">
+   ${img?`<img class="cover" src="${esc(img)}" alt="" loading="lazy">`:""}
+   <div class="row"><span><span class="tag" style="background:${c}1f;color:${c}">${esc(o.icon||"")} ${esc(o.category)}</span>${o.badge?` <span class="bdg" style="background:${c}">${esc(o.badge)}</span>`:""}</span>
    <span class="days ${d!==null&&d<=7?"soon":""}">${d===null?"Open":d==0?"Last day":d+" days left"}</span></div>
    <h3>${esc(o.title)}</h3><p class="desc">${esc(o.description)}</p>
    <div class="meta">${esc(o.location||"")}${o.verified_at?" · Verified "+esc(o.verified_at):""}</div>
-   <details><summary>See details</summary><p><b>Eligibility:</b> ${esc(o.eligibility)}</p><p><b>Benefits:</b> ${esc(o.benefits)}</p><p><b>Documents:</b> ${esc(o.required_docs)}</p></details>
-   <div class="actions">${/^https?:\/\//.test(o.link||"")?`<a class="btn sm ghost" href="${esc(o.link)}" target="_blank" rel="noopener">Official link</a>`:""}
-   <button class="btn sm" onclick="openReqIdx(${opps.indexOf(o)})">Get help applying</button></div></div>`;}).join(""):'<p class="muted">No opportunities found yet. Check back soon.</p>';
+   <details><summary>What you need to apply</summary><p><b>Eligibility:</b> ${esc(o.eligibility)}</p><p><b>Benefits:</b> ${esc(o.benefits)}</p>${docsHtml(o)}${secs}</details>
+   <div class="actions">${safeUrl(o.link)?`<a class="btn sm ghost" href="${esc(o.link)}" target="_blank" rel="noopener">Official link</a>`:""}
+   ${o.price>0?`<button class="btn sm" style="background:${c}" onclick="openOpp('${esc(o.id)}')">${esc(o.cta_text||"Get application help")} · ${Number(o.price).toLocaleString()} RWF</button>`:`<a class="btn sm" style="background:${c}" href="https://wa.me/${WA}" target="_blank" rel="noopener">Ask for a price</a>`}</div></div>`;}).join(""):'<p class="muted">No opportunities found yet. Check back soon.</p>';
 }
-function openReqIdx(i){openReq(opps[i].title);}
 function drawServices(){
   const top=services.length?services[services.length-1].id:"";
   $("serviceGrid").innerHTML=services.map(s=>`<div class="card ${s.id==top?"feat":""}"><h3 style="margin-top:0">${esc(s.name)}</h3><p class="desc">${esc(s.description)}</p>
-   <div class="price">${Number(s.price).toLocaleString()} <small>RWF</small></div><div class="actions" style="margin-top:14px"><button class="btn" onclick="openReq('','${esc(s.id)}')">Request this</button></div></div>`).join("");
+   <div class="price">${Number(s.price).toLocaleString()} <small>RWF</small></div><div class="actions" style="margin-top:14px"><button class="btn" onclick="openSvc('${esc(s.id)}')">Request this</button></div></div>`).join("");
   $("svSel").innerHTML=services.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} – ${Number(s.price).toLocaleString()} RWF</option>`).join("");
 }
-function showPay(){
-  const s=services.find(x=>x.id==$("svSel").value); if(!s)return;
-  $("payNote").innerHTML=`Send <b>${Number(s.price).toLocaleString()} RWF</b> to MoMo <b>${esc(MOMO)}</b>, then type the transaction ID from the SMS below.`;
+
+// ---- request dialog: two modes. Opportunity mode uses the admin's price for that opportunity. ----
+function openOpp(id){cur=opps.find(x=>x.id==id);openDlg();}
+function openSvc(id){cur=null;openDlg(id);}
+function openDlg(sid){
+  $("fOut").textContent="";$("f").style.display="";
+  $("svWrap").style.display=cur?"none":"";
+  $("oppIn").value=cur?cur.title:""; $("oppIn").readOnly=!!cur;
+  $("dlgTitle").textContent=cur?"Application help":"Request help";
+  if(sid)$("svSel").value=sid; showPay(); $("dlg").showModal();
 }
-function openReq(opp,sid){ $("fOut").textContent=""; $("f").style.display=""; $("oppIn").value=opp||""; if(sid)$("svSel").value=sid; showPay(); $("dlg").showModal(); }
+function amount(){ return cur?cur.price:(services.find(x=>x.id==$("svSel").value)||{}).price; }
+function showPay(){
+  const a=amount(); if(!a)return;
+  $("payNote").innerHTML=`Send <b>${Number(a).toLocaleString()} RWF</b> to MoMo <b>${esc(MOMO)}</b>, then type the transaction ID (FT Id) from the MoMo SMS below. Your payment is confirmed automatically.`;
+}
 async function send(e){
-  e.preventDefault(); const f=e.target, s=services.find(x=>x.id==f.service.value);
+  e.preventDefault(); const f=e.target;
   const ref="OP-"+Math.random().toString(36).slice(2,8).toUpperCase();
   $("sendBtn").disabled=true;
-  const {error}=await db.from("requests").insert({ref,service_name:s.name,amount:s.price,opportunity:f.opp.value,
-    name:f.name.value,phone:f.phone.value.trim(),email:f.email.value,contact_pref:f.pref.value,
-    doc_link:f.doc.value,message:f.msg.value,momo_txn:f.txn.value.trim()});
+  const {error}=await db.rpc("submit_request",{p_ref:ref,p_service_id:cur?null:f.service.value,p_opp_id:cur?cur.id:null,p_opp_note:f.opp.value,
+    p_name:f.name.value,p_phone:f.phone.value,p_email:f.email.value,p_pref:f.pref.value,
+    p_doc:f.doc.value,p_msg:f.msg.value,p_txn:f.txn.value});
   $("sendBtn").disabled=false;
-  if(error){ $("fOut").textContent=error.code=="23505"?"This transaction ID was already used. Check it and try again.":"Could not send. Check your internet and try again."; return; }
+  if(error){ $("fOut").textContent=error.code=="23505"?"This transaction ID was already used. Check it and try again.":"Could not send: "+error.message; return; }
   f.style.display="none";
-  $("fOut").innerHTML=`<b>Request sent.</b><br>Your reference: <b style="font-size:1.3rem">${ref}</b><br>Save it. We verify your payment, then start. Use Track with your reference and phone.<br><br><a class="btn" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
+  $("fOut").innerHTML=`<b>Request sent.</b><br>Your reference: <b style="font-size:1.3rem">${ref}</b><br>Save it. Your payment is checked automatically. Use Track with your reference and phone to see when it is confirmed.<br><br><a class="btn" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
   f.reset();
 }
 const LABEL={awaiting_verification:"Waiting for payment check",paid:"Payment confirmed",in_progress:"We are working on it",completed:"Completed",rejected:"Payment not found. Contact us"};
