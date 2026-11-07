@@ -27,6 +27,10 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
 .login{max-width:380px;margin:50px auto}h3{margin:0 0 10px}label.l{display:block;font-size:.85rem;color:var(--muted);margin:4px 0 2px}
 .pv{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;border-top:4px solid var(--ac,#1769e0)}
 .pv img{width:100%;height:120px;object-fit:cover;display:block}.pv .b{padding:14px}.pv .t{display:inline-block;font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:99px}
+.doc{background:#fff;color:#111;border:1px solid var(--line);border-radius:10px;padding:24px;font-family:Georgia,serif;line-height:1.5;font-size:.95rem}
+.doc h1{margin:0;font-size:1.6rem}.doc h2{font-size:.95rem;text-transform:uppercase;border-bottom:1px solid #888;margin:16px 0 6px}.doc ul{margin:0 0 6px;padding-left:18px}.doc p{margin:0 0 10px}.dsub{color:#444}.dline{color:#333;margin:4px 0 8px;font-size:.9rem}
+label.l2{display:block;font-size:.85rem;color:var(--muted);margin:6px 0 2px}
+@media print{.top,.wrap{display:none!important}#docView{position:static!important;background:none!important;padding:0!important;display:block!important}.noprint{display:none!important}}
 @media(max-width:600px){.g2,.g3{grid-template-columns:1fr}}
 </style>
 </head>
@@ -75,10 +79,7 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
       <h3 style="margin-top:14px">Required documents and their tools</h3>
       <p class="muted" style="margin:0 0 8px">Each document can send the customer to one of your tools (add the tool link in the Tools tab).</p>
       <div id="docRows"></div><button class="gray sm" onclick="addDocRow()">+ Add document</button>
-      <div class="card" style="background:#f4f8ff;margin-top:12px"><b>Add a tool here</b>
-        <p class="muted" style="margin:2px 0 8px">Paste the link of a tool (CV generator, motivation letter tool…). Then pick it in the document list above. Customers only get the link after they pay for support.</p>
-        <div class="g2"><input id="qt_name" placeholder="Tool name (example: CV Builder)"><input id="qt_url" placeholder="Tool link (https://…)"></div>
-        <button class="sm" onclick="quickTool()">Add tool</button> <span class="msg" id="qterr"></span></div>
+      <p class="muted" style="margin-top:10px">Tools are built into OpenPath. Pick one for each document. Create or edit tools in the <b>Tools</b> tab.</p>
 
       <h3 style="margin-top:14px">Apply instructions (free, everyone sees them first)</h3>
       <textarea id="o_instr" rows="7" placeholder="Step-by-step: how to apply. Write step 1, step 2, step 3… each on its own line."></textarea>
@@ -108,9 +109,12 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
 
   <!-- TOOLS -->
   <div id="tool" style="display:none">
-    <div class="card"><h3>Add a tool</h3><p class="muted" style="margin:0 0 8px">Tool links are shown to a customer only after they pay for support.</p>
-      <div class="g2"><input id="tl_key" placeholder="Short key (example: cv)"><input id="tl_name" placeholder="Name (example: CV Builder)"></div>
-      <input id="tl_url" placeholder="Link to the tool (https://…)"><button onclick="addTool()">Add tool</button><div class="msg" id="terr"></div></div>
+    <div class="card"><h3>Add a tool</h3>
+      <p class="muted" style="margin:0 0 8px">A tool = form fields + a layout. Field types: text, textarea, date. Layout blocks: title, line, heading, para, list, text, bold. In text blocks, {{id}} inserts an answer and {{id|default}} uses a default.</p>
+      <div class="g2"><input id="tl_key" placeholder="Short key (example: reference_letter)"><input id="tl_name" placeholder="Name (example: Reference Letter Builder)"></div>
+      <label class="l2">Fields (JSON)</label><textarea id="tl_fields" rows="5" style="font-family:monospace;font-size:.8rem">[{"id":"name","label":"Full name","type":"text"},{"id":"body","label":"Your text","type":"textarea"}]</textarea>
+      <label class="l2">Layout (JSON)</label><textarea id="tl_layout" rows="5" style="font-family:monospace;font-size:.8rem">[{"t":"title","field":"name"},{"t":"para","field":"body"}]</textarea>
+      <button onclick="addTool()">Add tool</button><div class="msg" id="terr"></div></div>
     <div id="toolList"></div>
   </div>
 
@@ -126,6 +130,10 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
   </div>
 </div></div>
 
+<div id="docView" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;overflow:auto;padding:16px">
+  <div style="max-width:720px;margin:0 auto"><div class="card"><div class="noprint" style="margin-bottom:10px"><button onclick="window.print()">Print or save as PDF</button> <button class="gray" onclick="$('docView').style.display='none'">Close</button></div><div id="docBody" class="doc"></div></div></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";  // same two values as index.html
@@ -136,7 +144,7 @@ const safeUrl=u=>/^https?:\/\//.test(u||"")?u:"";
 const STATUS=["awaiting_verification","paid","in_progress","completed","rejected"];
 // The admin can only move work forward. "paid" is set by the system alone.
 const NEXT={awaiting_verification:["awaiting_verification","rejected"],rejected:["rejected"],paid:["paid","in_progress","completed"],in_progress:["in_progress","completed"],completed:["completed"]};
-let db,rows=[],pays=[],toolsList=[],oppsList=[],idleTimer;
+let db,rows=[],pays=[],docsAll=[],toolsList=[],oppsList=[],idleTimer;
 
 if(SB_URL.includes("PASTE")||SB_KEY.includes("PASTE")){ $("lerr").textContent="Setup missing: put your Supabase URL and anon key at the top of the script in admin.html."; }
 else if(typeof supabase==="undefined"){ $("lerr").textContent="Could not load the Supabase library. Check your internet."; }
@@ -170,6 +178,7 @@ async function loadReq(){
   if(error){$("reqList").innerHTML=`<div class="card msg">Could not load requests: ${esc(error.message)}</div>`;return;}
   rows=data||[];
   const p=await db.from("payments").select("*").order("received_at",{ascending:false}).limit(300); pays=p.data||[];
+  const dd=await db.from("documents").select("*").order("updated_at",{ascending:false}); docsAll=dd.data||[];
   drawReq(); drawPay();
 }
 function drawPay(){
@@ -190,7 +199,7 @@ function drawReq(){
    <div><b>Opportunity:</b> ${esc(r.opportunity)}</div><div><b>Date:</b> ${new Date(r.created_at).toLocaleString()}</div>
    <div><b>Documents:</b> ${safeUrl(r.doc_link)?`<a href="${esc(r.doc_link)}" target="_blank" rel="noopener noreferrer">open link</a>`:esc(r.doc_link)}</div></div>
    <div><b>Message:</b> ${esc(r.message)}</div>
-   <div style="margin-top:6px">${payInfo(r)}</div>
+   <div style="margin-top:6px">${payInfo(r)}</div>${docLinks(r)}
    <div class="g2" style="margin-top:10px"><select id="s_${r.id}">${(NEXT[r.status]||[r.status]).map(s=>`<option ${s==r.status?"selected":""}>${s}</option>`).join("")}</select>
     <input id="n_${r.id}" placeholder="Note shown to customer" value="${esc(r.admin_note)}"></div>
    <button onclick="saveReq('${r.id}')">Save</button>
@@ -215,33 +224,64 @@ function exportCsv(){
 /* ---------- tools ---------- */
 async function loadTools(){
   const {data,error}=await db.from("tools").select("*").order("name");
-  if(error){$("toolList").innerHTML=`<div class="card msg">${esc(error.message)}. Did you run schema_v2.sql?</div>`;return;}
+  if(error){$("toolList").innerHTML=`<div class="card msg">${esc(error.message)}. Did you run schema_v8.sql?</div>`;return;}
   toolsList=data||[];
-  $("toolList").innerHTML=toolsList.map(t=>`<div class="card"><b>${esc(t.name)}</b> <span class="muted">(key: ${esc(t.key)})</span> ${t.url?"":'<span class="badge">no link yet</span>'}
-   <input id="tn_${t.id}" value="${esc(t.name)}"><input id="tu_${t.id}" value="${esc(t.url)}" placeholder="Link to the tool (https://…)">
+  $("toolList").innerHTML=toolsList.map(t=>`<div class="card"><b>${esc(t.name)}</b> <span class="muted">(key: ${esc(t.key)})</span> ${(t.fields||[]).length?"":'<span class="badge">no fields yet</span>'}
+   <input id="tn_${t.id}" value="${esc(t.name)}">
+   <label class="l2">Fields (JSON)</label><textarea id="tf_${t.id}" rows="6" style="font-family:monospace;font-size:.8rem">${esc(JSON.stringify(t.fields||[],null,1))}</textarea>
+   <label class="l2">Layout (JSON)</label><textarea id="tly_${t.id}" rows="6" style="font-family:monospace;font-size:.8rem">${esc(JSON.stringify(t.layout||[],null,1))}</textarea>
    <label><input type="checkbox" id="ta_${t.id}" ${t.active?"checked":""}>active</label><br>
-   <button onclick="saveTool('${t.id}')">Save</button><button class="red sm" onclick="delTool('${t.id}')">Delete</button></div>`).join("");
+   <button onclick="saveTool('${t.id}')">Save</button><button class="gray sm" onclick="previewTool('${t.id}')">Test preview</button><button class="red sm" onclick="delTool('${t.id}')">Delete</button> <span class="msg" id="te_${t.id}"></span></div>`).join("");
   document.querySelectorAll(".docTool").forEach(x=>fillToolSelect(x));
 }
+function parseDef(f,l){
+  const fields=JSON.parse(f), layout=JSON.parse(l);
+  if(!Array.isArray(fields)||!Array.isArray(layout))throw new Error("Fields and layout must be lists [ ... ]");
+  return {fields,layout};
+}
 async function saveTool(id){
-  const u=$("tu_"+id).value.trim(); if(u&&!safeUrl(u)){alert("The link must start with https://");return;}
-  const {error}=await db.from("tools").update({name:$("tn_"+id).value,url:u,active:$("ta_"+id).checked}).eq("id",id);
-  if(error)alert(error.message); loadTools();
+  const m=$("te_"+id); m.textContent="";
+  let def; try{def=parseDef($("tf_"+id).value,$("tly_"+id).value);}catch(e){m.textContent="JSON problem: "+e.message;return;}
+  const {error}=await db.from("tools").update({name:$("tn_"+id).value,fields:def.fields,layout:def.layout,active:$("ta_"+id).checked}).eq("id",id);
+  if(error){m.textContent=error.message;return;} m.textContent="Saved ✓"; setTimeout(loadTools,600);
+}
+function previewTool(id){
+  let def; try{def=parseDef($("tf_"+id).value,$("tly_"+id).value);}catch(e){$("te_"+id).textContent="JSON problem: "+e.message;return;}
+  const v={}; def.fields.forEach(x=>v[x.id]=x.placeholder||x.label||x.id);
+  $("docBody").innerHTML=renderDoc(def.layout,v); $("docView").style.display="block";
 }
 async function addTool(){
-  $("terr").textContent=""; const k=$("tl_key").value.trim().toLowerCase().replace(/\s+/g,"_"), n=$("tl_name").value.trim(), u=$("tl_url").value.trim();
-  if(!k||!n){$("terr").textContent="Key and name are required.";return;} if(u&&!safeUrl(u)){$("terr").textContent="The link must start with https://";return;}
-  const {error}=await db.from("tools").insert({key:k,name:n,url:u}); if(error){$("terr").textContent=error.message;return;}
-  ["tl_key","tl_name","tl_url"].forEach(i=>$(i).value=""); loadTools();
+  $("terr").textContent=""; const k=$("tl_key").value.trim().toLowerCase().replace(/\s+/g,"_"), n=$("tl_name").value.trim();
+  if(!k||!n){$("terr").textContent="Key and name are required.";return;}
+  let def; try{def=parseDef($("tl_fields").value,$("tl_layout").value);}catch(e){$("terr").textContent="JSON problem: "+e.message;return;}
+  const {error}=await db.from("tools").insert({key:k,name:n,fields:def.fields,layout:def.layout}); if(error){$("terr").textContent=error.message;return;}
+  ["tl_key","tl_name"].forEach(i=>$(i).value=""); loadTools();
 }
-async function quickTool(){
-  $("qterr").textContent=""; const n=$("qt_name").value.trim(), u=$("qt_url").value.trim();
-  if(!n||!safeUrl(u)){$("qterr").textContent="Enter a name and a link starting with https://";return;}
-  const key=n.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")||"tool";
-  let {error}=await db.from("tools").insert({key,name:n,url:u});
-  if(error)({error}=await db.from("tools").insert({key:key+"_"+Math.random().toString(36).slice(2,5),name:n,url:u}));
-  if(error){$("qterr").textContent=error.message;return;}
-  $("qt_name").value="";$("qt_url").value="";$("qterr").textContent="Tool added. Pick it in the document list.";await loadTools();
+function renderDoc(layout,v){
+  const g=id=>String(v[id]??"").trim();
+  const lines=t=>t.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const fill=t=>String(t||"").split("\n").map(line=>{let had=false,any=false;
+    const out=line.split(/(\{\{\w+(?:\|[^}]*)?\}\})/).map(part=>{const m=part.match(/^\{\{(\w+)(?:\|([^}]*))?\}\}$/);
+      if(!m)return esc(part); had=true; const val=g(m[1])||m[2]||""; if(val)any=true; return esc(val);}).join("");
+    return had&&!any?null:out;}).filter(x=>x&&x.trim()).join("<br>");
+  return (layout||[]).map(b=>{
+    if(b.t=="title"){ if(!g(b.field))return""; return `<h1>${esc(g(b.field))}</h1>${b.sub&&g(b.sub)?`<div class="dsub">${esc(g(b.sub))}</div>`:""}`; }
+    if(b.t=="line"){ const a=(b.fields||[]).map(g).filter(Boolean); return a.length?`<div class="dline">${a.map(esc).join(" | ")}</div>`:""; }
+    if(b.t=="heading"){ return !b.if||g(b.if)?`<h2>${esc(b.text)}</h2>`:""; }
+    if(b.t=="para"){ return g(b.field)?`<p style="white-space:pre-wrap">${esc(g(b.field))}</p>`:""; }
+    if(b.t=="list"){ const a=lines(g(b.field)); return a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""; }
+    if(b.t=="bold"){ const t=fill(b.text); return t?`<p><b>${t}</b></p>`:""; }
+    if(b.t=="text"){ const t=fill(b.text); return t?`<p>${t}</p>`:""; }
+    return ""; }).join("");
+}
+function docLinks(r){
+  const a=docsAll.filter(x=>x.request_id==r.id);
+  return a.length?`<div style="margin-top:6px"><b>Documents created:</b> ${a.map(x=>`<button class="gray sm" onclick="viewDoc('${x.id}')">${esc(x.doc_name)}</button>`).join(" ")}</div>`:"";
+}
+function viewDoc(id){
+  const x=docsAll.find(d=>d.id==id), t=toolsList.find(t=>t.key==x.tool_key);
+  $("docBody").innerHTML=t?renderDoc(t.layout,x.data):'<p class="muted">The tool for this document was deleted. Raw answers:</p><pre style="white-space:pre-wrap">'+esc(JSON.stringify(x.data,null,1))+'</pre>';
+  $("docView").style.display="block";
 }
 async function delTool(id){if(confirm("Delete this tool?")){await db.from("tools").delete().eq("id",id);loadTools();}}
 
