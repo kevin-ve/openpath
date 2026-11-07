@@ -292,12 +292,8 @@ function apForm(){
    <p class="muted">Support fee: <b>${Number(o.price).toLocaleString()} RWF</b></p>
    <p>Fill in your details and pay. Then you unlock the tools to create your documents, the resources and direct support.</p></div>
    <form autocomplete="off" class="card" onsubmit="apNext(event)">
-    <input autocomplete="off" name="op_fullname" placeholder="Full name" value="${esc(i.name)}" required>
-    <input autocomplete="off" name="op_phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
-    <input autocomplete="off" name="op_email" type="email" placeholder="Email (optional)" value="${esc(i.email)}">
-    <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
-    <input autocomplete="off" name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
-    <textarea autocomplete="off" name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
+    <input autocomplete="off" name="op_fullname" placeholder="AMAZINA YAWE" value="${esc(i.name)}" required>
+    <input autocomplete="off" name="op_phone" placeholder="NIMERO YAWE (URI BUKORESHE WISHYURA)" value="${esc(i.phone)}" required>
     <button class="btn">Continue to payment</button> <button class="btn ghost" type="button" onclick="apChoose()">Back</button></form>`;
 }
 function apNext(e){
