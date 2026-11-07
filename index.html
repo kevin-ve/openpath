@@ -277,13 +277,14 @@ function apChoose(){
   const o=ap.o, link=safeUrl(o.link), hasPrice=o.price>0;
   $("applyPage").scrollTop=0;
   $("apBody").innerHTML=steps(2)+`<h3 style="margin:0 0 12px">How do you want to apply?</h3>
-   <div class="card"><h3 style="margin-top:0">Apply on your own <span class="price" style="font-size:1.1rem">Free</span></h3>
-    <p class="muted">You prepare your documents yourself and apply on the official website.</p>
-    ${link?`<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Go to the official application</a>`:`<p class="muted">The official link is not available yet. <a href="https://wa.me/${WA}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`}</div>
-   <div class="card" style="border:2px solid var(--blue)"><h3 style="margin-top:0">Get support ${hasPrice?`<span class="price" style="font-size:1.1rem">${Number(o.price).toLocaleString()} RWF</span>`:""}</h3>
+  <div class="card" style="border:2px solid var(--blue)"><h3 style="margin-top:0">Get support ${hasPrice?`<span class="price" style="font-size:1.1rem">${Number(o.price).toLocaleString()} RWF</span>`:""}</h3>
     <p class="muted">We help you apply. You get:</p>
-    <ul class="docs"><li>Tools to create each document you need (CV, motivation letter and more)</li><li>Guides and sample resources</li><li>Direct support from us on WhatsApp</li><li>The official link to submit your finished documents</li></ul>
+    <ul class="docs"><li>we prepare  each document you need (CV, motivation letter and more)</li><li>Guides and sample resources</li><li>Direct support from us on WhatsApp</li><li>The official link to submit your finished documents</li></ul>
     ${hasPrice?`<button class="btn" onclick="apForm()">Get support</button>`:`<a class="btn" href="https://wa.me/${WA}" target="_blank" rel="noopener">Ask us for the price</a>`}</div>
+    <p class="muted">You prepare your documents yourself and apply on the official website.</p>
+   
+   <div class="card"><h3 style="margin-top:0">Apply on your own <span class="price" style="font-size:1.1rem">Free</span></h3>
+    ${link?`<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Go to the official application</a>`:`<p class="muted">The official link is not available yet. <a href="https://wa.me/${WA}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`}</div>
    <button class="btn ghost" onclick="apIntro()">Back</button>`;
 }
 function apForm(){
