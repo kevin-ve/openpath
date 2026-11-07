@@ -295,10 +295,6 @@ function apForm(){
    <form autocomplete="off" class="card" onsubmit="apNext(event)">
     <input autocomplete="off" name="op_fullname" placeholder="Full name" value="${esc(i.name)}" required>
     <input autocomplete="off" name="op_phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
-    <input autocomplete="off" name="op_email" type="email" placeholder="Email (optional)" value="${esc(i.email)}">
-    <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
-    <input autocomplete="off" name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
-    <textarea autocomplete="off" name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
     <button class="btn">Continue to payment</button> <button class="btn ghost" type="button" onclick="apChoose()">Back</button></form>`;
 }
 function apNext(e){
