@@ -72,6 +72,12 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 .ap-body{max-width:640px;padding-top:22px;padding-bottom:70px}.ap-body .card{margin-bottom:14px}
 .steps3{display:flex;gap:6px;margin-bottom:16px;font-size:.8rem;font-weight:700}.steps3 span{flex:1;text-align:center;padding:8px 4px;border-radius:10px;background:#e9eef6;color:var(--muted)}.steps3 span.on{background:var(--navy);color:#fff}
 .okbox{background:#e6f6ec;border-left:4px solid #17803d;padding:10px 12px;border-radius:8px;margin-bottom:14px}
+label.l{display:block;font-size:.85rem;color:var(--muted);margin:6px 0 2px}
+.doc{background:#fff;color:#111;border:1px solid var(--line);border-radius:10px;padding:24px;font-family:Georgia,"Times New Roman",serif;line-height:1.5;font-size:.95rem;overflow-wrap:anywhere}
+.doc h1{margin:0;font-size:1.6rem}.doc h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #888;padding-bottom:2px;margin:16px 0 6px}
+.doc ul{margin:0 0 6px;padding-left:18px}.doc p{margin:0 0 10px}.dsub{color:#444}.dline{color:#333;margin:4px 0 8px;font-size:.9rem}
+#printArea{display:none}
+@media print{body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block}#printArea .doc{border:0;padding:0}}
 @media(max-width:640px){nav a:not(.btn){display:none}.hero svg{display:none}}
 </style>
 </head>
@@ -85,8 +91,8 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <div class="hero"><div class="wrap">
   <h1>Your next opportunity starts here.</h1>
   <p>Find scholarships, jobs, grants and programmes in Rwanda and beyond. Then get expert help to apply and win.</p>
-  <form class="searchbar" onsubmit="event.preventDefault();drawOpps();location.hash='#opps'">
-    <input id="q" type="search" placeholder="Search scholarships, jobs, grants…" aria-label="Search opportunities" oninput="drawOpps()">
+  <form autocomplete="off" class="searchbar" onsubmit="event.preventDefault();drawOpps();location.hash='#opps'">
+    <input autocomplete="off" id="q" type="search" placeholder="Search scholarships, jobs, grants…" aria-label="Search opportunities" oninput="drawOpps()">
     <button class="btn sun">Search</button>
   </form>
   <div class="stats"><div><b id="nOpps">0</b><span>live opportunities</span></div><div><b>Free</b><span>to browse, no account</span></div><div><b>MoMo</b><span>pay only for help you request</span></div></div>
@@ -123,7 +129,7 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <section id="track" class="band"><div class="wrap">
   <h2>Track your request</h2><p class="sub">Enter the reference we gave you and your phone number.</p>
   <div style="max-width:420px">
-    <input id="tRef" placeholder="Reference (example: OP-AB12CD)"><input id="tPhone" placeholder="Phone number you used">
+    <input autocomplete="off" id="tRef" placeholder="Reference (example: OP-AB12CD)"><input autocomplete="off" id="tPhone" placeholder="Phone number you used">
     <button class="btn" onclick="track()">Check status</button><p id="tOut" class="muted"></p>
   </div>
 </div></section>
@@ -132,6 +138,8 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 <footer><div class="wrap"><b>OpenPath</b> – Discover opportunities. Unlock your potential.<br>Musanze, Rwanda</div></footer>
 <a class="wa" id="waBtn" href="#" target="_blank" rel="noopener">WhatsApp us</a>
 
+<div id="printArea"></div>
+
 <section id="applyPage" hidden>
   <div class="ap-top"><div class="wrap"><button class="btn sm ghost" onclick="closeApply()">← Back</button><b id="apTitle"></b></div></div>
   <div class="wrap ap-body" id="apBody"></div>
@@ -139,17 +147,17 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 
 <dialog id="dlg">
   <h3 id="dlgTitle" style="margin:0 0 14px;font-size:1.3rem">Request help</h3>
-  <form id="f" onsubmit="send(event)">
+  <form autocomplete="off" id="f" onsubmit="send(event)">
     <div id="svWrap"><select name="service" id="svSel" onchange="showPay()"></select></div>
-    <input name="opp" id="oppIn" placeholder="Opportunity (name or link)">
-    <input name="name" placeholder="Full name" required>
-    <input name="phone" placeholder="Your MoMo phone number (the one you pay from)" required>
-    <input name="email" type="email" placeholder="Email (optional)">
+    <input autocomplete="off" name="opp" id="oppIn" placeholder="Opportunity (name or link)">
+    <input autocomplete="off" name="op_fullname" placeholder="Full name" required>
+    <input autocomplete="off" name="phone" placeholder="Your MoMo phone number (the one you pay from)" required>
+    <input autocomplete="off" name="email" type="email" placeholder="Email (optional)">
     <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
-    <input name="doc" placeholder="Link to your documents (Google Drive, anyone with link)">
-    <textarea name="msg" rows="2" placeholder="Anything we should know?"></textarea>
+    <input autocomplete="off" name="doc" placeholder="Link to your documents (Google Drive, anyone with link)">
+    <textarea autocomplete="off" name="msg" rows="2" placeholder="Anything we should know?"></textarea>
     <div class="note" id="payNote"></div>
-    <input name="txn" placeholder="MoMo transaction ID (FT Id from the SMS)" required>
+    <input autocomplete="off" name="op_txn_ref" placeholder="MoMo transaction ID (FT Id from the SMS)" required>
     <button class="btn" id="sendBtn">Send request</button>
     <button class="btn ghost" type="button" onclick="dlg.close()">Cancel</button>
   </form>
@@ -232,8 +240,8 @@ async function send(e){
   const ref="OP-"+Math.random().toString(36).slice(2,8).toUpperCase();
   $("sendBtn").disabled=true;
   const {error}=await db.rpc("submit_request",{p_ref:ref,p_service_id:cur?null:f.service.value,p_opp_id:cur?cur.id:null,p_opp_note:f.opp.value,
-    p_name:f.name.value,p_phone:f.phone.value,p_email:f.email.value,p_pref:f.pref.value,
-    p_doc:f.doc.value,p_msg:f.msg.value,p_txn:f.txn.value});
+    p_name:f.op_fullname.value,p_phone:f.phone.value,p_email:f.email.value,p_pref:f.pref.value,
+    p_doc:f.doc.value,p_msg:f.msg.value,p_txn:f.op_txn_ref.value});
   $("sendBtn").disabled=false;
   if(error){ $("fOut").textContent=error.code=="23505"?"This transaction ID was already used. Check it and try again.":"Could not send: "+error.message; return; }
   f.style.display="none";
@@ -283,28 +291,28 @@ function apForm(){
   $("apBody").innerHTML=steps(3)+`<div class="card"><h3 style="margin-top:0">${esc(o.title)}</h3>
    <p class="muted">Support fee: <b>${Number(o.price).toLocaleString()} RWF</b></p>
    <p>Fill in your details and pay. Then you unlock the tools to create your documents, the resources and direct support.</p></div>
-   <form class="card" onsubmit="apNext(event)">
-    <input name="name" placeholder="Full name" value="${esc(i.name)}" required>
-    <input name="phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
-    <input name="email" type="email" placeholder="Email (optional)" value="${esc(i.email)}">
+   <form autocomplete="off" class="card" onsubmit="apNext(event)">
+    <input autocomplete="off" name="op_fullname" placeholder="Full name" value="${esc(i.name)}" required>
+    <input autocomplete="off" name="op_phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
+    <input autocomplete="off" name="op_email" type="email" placeholder="Email (optional)" value="${esc(i.email)}">
     <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
-    <input name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
-    <textarea name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
+    <input autocomplete="off" name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
+    <textarea autocomplete="off" name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
     <button class="btn">Continue to payment</button> <button class="btn ghost" type="button" onclick="apChoose()">Back</button></form>`;
 }
 function apNext(e){
   e.preventDefault(); const f=e.target;
-  ap.info={name:f.name.value,phone:f.phone.value.trim(),email:f.email.value,pref:f.pref.value,doc:f.doc.value,msg:f.msg.value};
+  ap.info={name:f.op_fullname.value,phone:f.op_phone.value.trim(),email:f.op_email.value,pref:f.pref.value,doc:f.doc.value,msg:f.msg.value};
   $("applyPage").scrollTop=0; apPay();
 }
 function apPay(){
-  $("apBody").innerHTML=steps(3)+`<form class="card" onsubmit="apSubmit(event)"><h3 style="margin-top:0">Pay ${Number(ap.o.price).toLocaleString()} RWF</h3>
+  $("apBody").innerHTML=steps(3)+`<form autocomplete="off" class="card" onsubmit="apSubmit(event)"><h3 style="margin-top:0">Pay ${Number(ap.o.price).toLocaleString()} RWF</h3>
    <div class="note">Send <b>${Number(ap.o.price).toLocaleString()} RWF</b> with MoMo to <b>${esc(MOMO)}</b>, from the number <b>${esc(ap.info.phone)}</b>. Then type the transaction ID (FT Id) from the MoMo SMS. Your payment is confirmed automatically.</div>
-   <input name="txn" placeholder="MoMo transaction ID (FT Id)" required>
+   <input autocomplete="off" name="op_txn_ref" placeholder="MoMo transaction ID (FT Id)" required>
    <button class="btn" id="apBtn">I have paid, unlock support</button> <button class="btn ghost" type="button" onclick="apForm()">Back</button><p id="apErr" class="muted"></p></form>`;
 }
 async function apSubmit(e){
-  e.preventDefault(); const i=ap.info, txn=e.target.txn.value;
+  e.preventDefault(); const i=ap.info, txn=e.target.op_txn_ref.value;
   const ref="OP-"+Math.random().toString(36).slice(2,8).toUpperCase(); $("apBtn").disabled=true;
   const {error}=await db.rpc("submit_request",{p_ref:ref,p_service_id:null,p_opp_id:ap.o.id,p_opp_note:"",p_name:i.name,p_phone:i.phone,p_email:i.email,p_pref:i.pref,p_doc:i.doc,p_msg:i.msg,p_txn:txn});
   $("apBtn").disabled=false;
@@ -318,7 +326,7 @@ function apWait(){
    <p>Status: <b id="apStatus">Waiting for payment check</b></p><p class="muted">This page updates by itself. It usually takes less than a minute.</p>
    <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ap.ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a>
    <details style="margin-top:14px"><summary>Paid from a different number?</summary>
-    <input id="apPh2" placeholder="The number you paid from" style="margin-top:8px"><button class="btn sm" onclick="apFixPhone()">Update and recheck</button><p id="apFix" class="muted"></p></details></div>`;
+    <input autocomplete="off" id="apPh2" placeholder="The number you paid from" style="margin-top:8px"><button class="btn sm" onclick="apFixPhone()">Update and recheck</button><p id="apFix" class="muted"></p></details></div>`;
 }
 async function apFixPhone(){
   const np=$("apPh2").value.trim(); if(np.length<8){$("apFix").textContent="Enter the full number.";return;}
@@ -335,18 +343,78 @@ async function apCheck(){
   if(r&&r.status=="rejected")clearInterval(apTimer);
 }
 function openPack(){ ap={ref:$("tRef").value.trim().toUpperCase(),phone:$("tPhone").value.trim()}; showApply(window._pk.title); apPack(window._pk); }
+function renderDoc(layout,v){
+  const g=id=>String(v[id]??"").trim();
+  const lines=t=>t.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const fill=t=>String(t||"").split("\n").map(line=>{let had=false,any=false;
+    const out=line.split(/(\{\{\w+(?:\|[^}]*)?\}\})/).map(part=>{const m=part.match(/^\{\{(\w+)(?:\|([^}]*))?\}\}$/);
+      if(!m)return esc(part); had=true; const val=g(m[1])||m[2]||""; if(val)any=true; return esc(val);}).join("");
+    return had&&!any?null:out;}).filter(x=>x&&x.trim()).join("<br>");
+  return (layout||[]).map(b=>{
+    if(b.t=="title"){ if(!g(b.field))return""; return `<h1>${esc(g(b.field))}</h1>${b.sub&&g(b.sub)?`<div class="dsub">${esc(g(b.sub))}</div>`:""}`; }
+    if(b.t=="line"){ const a=(b.fields||[]).map(g).filter(Boolean); return a.length?`<div class="dline">${a.map(esc).join(" | ")}</div>`:""; }
+    if(b.t=="heading"){ return !b.if||g(b.if)?`<h2>${esc(b.text)}</h2>`:""; }
+    if(b.t=="para"){ return g(b.field)?`<p style="white-space:pre-wrap">${esc(g(b.field))}</p>`:""; }
+    if(b.t=="list"){ const a=lines(g(b.field)); return a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""; }
+    if(b.t=="bold"){ const t=fill(b.text); return t?`<p><b>${t}</b></p>`:""; }
+    if(b.t=="text"){ const t=fill(b.text); return t?`<p>${t}</p>`:""; }
+    return ""; }).join("");
+}
+function apPhone(){ return ap.info?ap.info.phone:ap.phone; }
 function apPack(d){
-  const docs=(d.docs||[]).map(x=>`<li>${esc(x.name)}${safeUrl(x.tool_url)?` <a class="tl" href="${esc(x.tool_url)}" target="_blank" rel="noopener">Create with ${esc(x.tool_name)}</a>`:` <span class="muted">· message us on WhatsApp for this one</span>`}</li>`).join("");
+  ap.pack=d; $("applyPage").scrollTop=0;
+  const saved=n=>(d.saved||[]).find(x=>x.doc_name==n);
+  const docs=(d.docs||[]).map((x,i)=>{const s=saved(x.name), ok=(x.fields||[]).length>0;
+    return `<li>${esc(x.name)} ${ok?`<button class="btn sm ${s?"ghost":""}" onclick="openBuilder(${i})">${s?"Open or edit":"Create now"}</button>`:'<span class="muted">· message us for this one</span>'}${s?' <span class="muted">✓ saved</span>':""}</li>`;}).join("");
   const res=(d.resources||[]).filter(x=>safeUrl(x.url)).map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("");
-  $("applyPage").scrollTop=0;
   $("apBody").innerHTML=steps(3)+`<div class="okbox">Payment confirmed. Your reference: <b>${esc(ap.ref)}</b>. Save it to come back from Track.</div>
    <div class="card"><h3 style="margin-top:0">Step 1: Create your documents</h3>
+    <p class="muted">Everything you create is saved on your application (${esc(ap.ref)}). You can download it as PDF or Word.</p>
     ${docs?`<ul class="docs">${docs}</ul>`:'<p class="muted">No documents are listed for this opportunity.</p>'}</div>
    ${res?`<div class="card"><h3 style="margin-top:0">Guides and resources</h3><ul class="docs">${res}</ul></div>`:""}
-   <div class="card"><h3 style="margin-top:0">Step 2: Submit on the official website</h3><p class="muted">When your documents are ready, submit them here.</p>
+   <div class="card"><h3 style="margin-top:0">Step 2: Submit on the official website</h3><p class="muted">When your documents are ready, download them and submit them here.</p>
     ${safeUrl(d.apply_link)?`<a class="btn" href="${esc(d.apply_link)}" target="_blank" rel="noopener">Go to the official application</a>`:'<p class="muted">The official link is not available yet. Message us.</p>'}</div>
    <div class="card"><h3 style="margin-top:0">Need help?</h3><p class="muted">Send us your draft or ask any question.</p>
     <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, I need support. My reference is "+ap.ref)}" target="_blank" rel="noopener">Chat with us on WhatsApp</a></div>`;
+}
+
+/* ---------- Built-in document builder ---------- */
+let bd=null;
+const fid=x=>String(x.id||"").replace(/\W/g,"");
+function openBuilder(i){
+  const d=ap.pack.docs[i]; const sv=(ap.pack.saved||[]).find(x=>x.doc_name==d.name);
+  bd={i,doc:d,values:Object.assign({},sv?sv.data:{})}; $("applyPage").scrollTop=0;
+  const f=(d.fields||[]).map(x=>`<label class="l">${esc(x.label)}</label>`+(x.type=="textarea"
+    ?`<textarea autocomplete="off" id="bf_${fid(x)}" rows="4" placeholder="${esc(x.placeholder||"")}" oninput="bdUpdate()">${esc(bd.values[x.id])}</textarea>`
+    :`<input autocomplete="off" id="bf_${fid(x)}" ${x.type=="date"?'type="date"':""} value="${esc(bd.values[x.id])}" placeholder="${esc(x.placeholder||"")}" oninput="bdUpdate()">`)).join("");
+  $("apBody").innerHTML=`<button class="btn sm ghost" onclick="apPack(ap.pack)">← Back to my support page</button>
+   <h3 style="margin:14px 0 2px">${esc(d.name)}</h3><p class="muted">Made with ${esc(d.tool_name||"OpenPath")}. Press Save before you leave.</p>
+   <div class="card">${f}</div>
+   <p><button class="btn" onclick="bdSave()">Save to my application</button> <button class="btn ghost" onclick="bdPdf()">Download PDF</button> <button class="btn ghost" onclick="bdWord()">Download Word</button></p>
+   <p id="bdMsg" class="muted"></p><h4 style="margin:14px 0 6px">Preview</h4><div class="doc" id="bdPrev"></div>`;
+  bdUpdate();
+}
+function bdUpdate(){
+  (bd.doc.fields||[]).forEach(x=>{const el=$("bf_"+fid(x)); if(el)bd.values[x.id]=el.value;});
+  $("bdPrev").innerHTML=renderDoc(bd.doc.layout,bd.values);
+}
+async function bdSave(){
+  bdUpdate(); $("bdMsg").textContent="Saving…";
+  const {data,error}=await db.rpc("save_document",{p_ref:ap.ref,p_phone:apPhone(),p_doc_name:bd.doc.name,p_tool_key:bd.doc.tool_key,p_data:bd.values});
+  if(error||!data){ $("bdMsg").textContent="Could not save. Check your internet and try again."; return; }
+  const r=await db.rpc("get_apply_pack",{p_ref:ap.ref,p_phone:apPhone()}); if(r.data)ap.pack=r.data;
+  $("bdMsg").textContent="Saved to your application ✓";
+}
+function bdPdf(){
+  bdUpdate(); $("printArea").innerHTML='<div class="doc">'+renderDoc(bd.doc.layout,bd.values)+'</div>';
+  document.body.classList.add("printing"); window.print();
+}
+window.addEventListener("afterprint",()=>document.body.classList.remove("printing"));
+function bdWord(){
+  bdUpdate();
+  const html='<html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;line-height:1.5}h1{font-size:20pt;margin:0}h2{font-size:12pt;border-bottom:1px solid #888}</style></head><body>'+renderDoc(bd.doc.layout,bd.values)+'</body></html>';
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["\ufeff",html],{type:"application/msword"}));
+  a.download=(bd.doc.name||"document").replace(/[^\w\- ]/g,"")+".doc"; a.click();
 }
 load();
 </script>
