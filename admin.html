@@ -69,15 +69,15 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
       <textarea id="o_desc" rows="3" placeholder="Short description (shown on the card)" oninput="pv()"></textarea>
       <textarea id="o_elig" rows="2" placeholder="Eligibility"></textarea><textarea id="o_ben" rows="2" placeholder="Benefits"></textarea>
       <div class="g2"><div><label class="l">Deadline (empty = always open)</label><input id="o_dead" type="date"></div>
-        <div><label class="l">Official application link (hidden until the customer pays)</label><input id="o_link" placeholder="https://…"></div></div>
+        <div><label class="l">Official application link (used by "Apply on your own" and for submitting)</label><input id="o_link" placeholder="https://…"></div></div>
 
       <h3 style="margin-top:14px">Required documents and their tools</h3>
       <p class="muted" style="margin:0 0 8px">Each document can send the customer to one of your tools (add the tool link in the Tools tab).</p>
       <div id="docRows"></div><button class="gray sm" onclick="addDocRow()">+ Add document</button>
 
-      <h3 style="margin-top:14px">Apply pack (customers see it only after paying)</h3>
+      <h3 style="margin-top:14px">Apply instructions (free, everyone sees them first)</h3>
       <textarea id="o_instr" rows="7" placeholder="Step-by-step: how to apply. Write step 1, step 2, step 3… each on its own line."></textarea>
-      <label class="l">Resource links (guides, forms, sample letters, videos…)</label>
+      <label class="l">Support resources: guides, forms, sample letters (customers get these only after paying for support)</label>
       <div id="resRows"></div><button class="gray sm" onclick="addResRow()">+ Add resource</button>
 
       <h3 style="margin-top:14px">Price for application help</h3>
@@ -103,7 +103,7 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
 
   <!-- TOOLS -->
   <div id="tool" style="display:none">
-    <div class="card"><h3>Add a tool</h3><p class="muted" style="margin:0 0 8px">Tool links are shown to a customer only after their payment is confirmed.</p>
+    <div class="card"><h3>Add a tool</h3><p class="muted" style="margin:0 0 8px">Tool links are shown to a customer only after they pay for support.</p>
       <div class="g2"><input id="tl_key" placeholder="Short key (example: cv)"><input id="tl_name" placeholder="Name (example: CV Builder)"></div>
       <input id="tl_url" placeholder="Link to the tool (https://…)"><button onclick="addTool()">Add tool</button><div class="msg" id="terr"></div></div>
     <div id="toolList"></div>
@@ -123,7 +123,7 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";
+const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";   // same two values as index.html
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeColor=c=>/^#[0-9a-fA-F]{6}$/.test(c||"")?c:"#1769e0";
@@ -272,14 +272,14 @@ async function saveOpp(){
   const docs=[...document.querySelectorAll("#docRows .g3")].map(r=>({name:r.querySelector(".docName").value.trim(),tool:r.querySelector(".docTool").value})).filter(d=>d.name);
   const sections=[...document.querySelectorAll("#secRows > div")].map(r=>({title:r.querySelector(".secTitle").value.trim(),body:r.querySelector(".secBody").value.trim()})).filter(s=>s.title);
   const rec={title:$("o_title").value.trim(),category:$("o_cat").value.trim(),description:$("o_desc").value,eligibility:$("o_elig").value,benefits:$("o_ben").value,
-    location:$("o_loc").value,deadline:$("o_dead").value||null,link:null,price:$("o_price").value===""?null:+$("o_price").value,cta_text:$("o_cta").value,
+    location:$("o_loc").value,deadline:$("o_dead").value||null,link,instructions:$("o_instr").value,price:$("o_price").value===""?null:+$("o_price").value,cta_text:$("o_cta").value,
     accent:safeColor($("o_accent").value),icon:$("o_icon").value,badge:$("o_badge").value,cover_url:cover,sort_order:+$("o_sort").value||0,
     featured:$("o_feat").checked,published:$("o_pub").checked,docs,sections};
   const id=$("o_id").value;
   const resources=[...document.querySelectorAll("#resRows .g3")].map(r=>({title:r.querySelector(".resTitle").value.trim(),url:r.querySelector(".resUrl").value.trim()})).filter(x=>x.title&&safeUrl(x.url));
   const res=id?await db.from("opportunities").update(rec).eq("id",id).select("id").single():await db.from("opportunities").insert(rec).select("id").single();
   if(res.error){$("oerr").textContent="Could not save: "+res.error.message;return;}
-  const pk=await db.from("apply_packs").upsert({opportunity_id:res.data.id,instructions:$("o_instr").value,resources,apply_link:link});
+  const pk=await db.from("apply_packs").upsert({opportunity_id:res.data.id,resources});
   if(pk.error){$("oerr").textContent="Opportunity saved, but the apply pack failed: "+pk.error.message+" (did you run schema_v4.sql?)";loadOpp();return;}
   resetForm(); loadOpp(); window.scrollTo(0,document.body.scrollHeight);
 }
@@ -300,7 +300,7 @@ async function editOpp(id){
   const m={o_title:"title",o_cat:"category",o_loc:"location",o_desc:"description",o_elig:"eligibility",o_ben:"benefits",o_dead:"deadline",o_link:"link",o_price:"price",o_cta:"cta_text",o_icon:"icon",o_badge:"badge",o_cover:"cover_url",o_sort:"sort_order"};
   for(const k in m)$(k).value=o[m[k]]??""; $("o_accent").value=safeColor(o.accent);$("o_feat").checked=!!o.featured;$("o_pub").checked=!!o.published;
   (o.docs||[]).forEach(d=>addDocRow(d.name,d.tool));
-  $("o_link").value=(pk&&pk.apply_link)||o.link||"";$("o_instr").value=(pk&&pk.instructions)||"";(pk&&pk.resources||[]).forEach(x=>addResRow(x.title,x.url)); (o.sections||[]).forEach(s=>addSecRow(s.title,s.body)); pv(); show("opp"); window.scrollTo(0,0);
+  $("o_link").value=o.link||"";$("o_instr").value=o.instructions||"";(pk&&pk.resources||[]).forEach(x=>addResRow(x.title,x.url)); (o.sections||[]).forEach(s=>addSecRow(s.title,s.body)); pv(); show("opp"); window.scrollTo(0,0);
 }
 async function dupOpp(id){
   const o={...oppsList.find(x=>x.id==id)}; delete o.id; delete o.created_at; o.title+=" (copy)"; o.published=false;
