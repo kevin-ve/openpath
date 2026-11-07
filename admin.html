@@ -55,6 +55,7 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
   <div id="req">
     <div class="g2"><input id="rq" placeholder="Search name, phone, reference, MoMo ID" oninput="drawReq()">
       <select id="rf" onchange="drawReq()"><option value="">All statuses</option><option>awaiting_verification</option><option>paid</option><option>in_progress</option><option>completed</option><option>rejected</option></select></div>
+    <p class="muted" style="margin:6px 0">Payments are confirmed by the system only. You manage the work status.</p>
     <button class="gray sm" onclick="exportCsv()">Download requests (CSV)</button>
     <div id="reqList"></div>
   </div>
@@ -74,6 +75,10 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
       <h3 style="margin-top:14px">Required documents and their tools</h3>
       <p class="muted" style="margin:0 0 8px">Each document can send the customer to one of your tools (add the tool link in the Tools tab).</p>
       <div id="docRows"></div><button class="gray sm" onclick="addDocRow()">+ Add document</button>
+      <div class="card" style="background:#f4f8ff;margin-top:12px"><b>Add a tool here</b>
+        <p class="muted" style="margin:2px 0 8px">Paste the link of a tool (CV generator, motivation letter tool…). Then pick it in the document list above. Customers only get the link after they pay for support.</p>
+        <div class="g2"><input id="qt_name" placeholder="Tool name (example: CV Builder)"><input id="qt_url" placeholder="Tool link (https://…)"></div>
+        <button class="sm" onclick="quickTool()">Add tool</button> <span class="msg" id="qterr"></span></div>
 
       <h3 style="margin-top:14px">Apply instructions (free, everyone sees them first)</h3>
       <textarea id="o_instr" rows="7" placeholder="Step-by-step: how to apply. Write step 1, step 2, step 3… each on its own line."></textarea>
@@ -123,12 +128,14 @@ button.red{background:var(--red)}button.gray{background:#fff;color:var(--ink);bo
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";   // same two values as index.html
+const SB_URL="https://ryyytkbjhdcdtpatejwx.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eXl0a2JqaGRjZHRwYXRland4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MDk5ODAsImV4cCI6MjEwOTI4NTk4MH0.rGMq3mbva34fVTyPoXtsU15L01qWYeLEL6XAPudAzEY";  // same two values as index.html
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeColor=c=>/^#[0-9a-fA-F]{6}$/.test(c||"")?c:"#1769e0";
 const safeUrl=u=>/^https?:\/\//.test(u||"")?u:"";
 const STATUS=["awaiting_verification","paid","in_progress","completed","rejected"];
+// The admin can only move work forward. "paid" is set by the system alone.
+const NEXT={awaiting_verification:["awaiting_verification","rejected"],rejected:["rejected"],paid:["paid","in_progress","completed"],in_progress:["in_progress","completed"],completed:["completed"]};
 let db,rows=[],pays=[],toolsList=[],oppsList=[],idleTimer;
 
 if(SB_URL.includes("PASTE")||SB_KEY.includes("PASTE")){ $("lerr").textContent="Setup missing: put your Supabase URL and anon key at the top of the script in admin.html."; }
@@ -184,7 +191,7 @@ function drawReq(){
    <div><b>Documents:</b> ${safeUrl(r.doc_link)?`<a href="${esc(r.doc_link)}" target="_blank" rel="noopener noreferrer">open link</a>`:esc(r.doc_link)}</div></div>
    <div><b>Message:</b> ${esc(r.message)}</div>
    <div style="margin-top:6px">${payInfo(r)}</div>
-   <div class="g2" style="margin-top:10px"><select id="s_${r.id}">${STATUS.map(s=>`<option ${s==r.status?"selected":""}>${s}</option>`).join("")}</select>
+   <div class="g2" style="margin-top:10px"><select id="s_${r.id}">${(NEXT[r.status]||[r.status]).map(s=>`<option ${s==r.status?"selected":""}>${s}</option>`).join("")}</select>
     <input id="n_${r.id}" placeholder="Note shown to customer" value="${esc(r.admin_note)}"></div>
    <button onclick="saveReq('${r.id}')">Save</button>
    <a href="https://wa.me/${encodeURIComponent((r.phone||"").replace(/\D/g,""))}" target="_blank" rel="noopener noreferrer"><button class="wa">WhatsApp</button></a>
@@ -194,7 +201,7 @@ function payInfo(r){
   const x=pays.find(p=>p.ft_id==r.momo_txn);
   if(!x)return '<span class="badge">No SMS payment found yet</span>';
   const ok=x.matched_request==r.id;
-  return `<span class="badge ${ok?"live":""}">SMS payment: ${x.amount.toLocaleString()} RWF from ***${esc(x.sender_last3)}${ok?" · confirmed automatically":" · NOT auto-confirmed, check amount or phone, then set status yourself"}</span>`;
+  return `<span class="badge ${ok?"live":""}">SMS payment: ${x.amount.toLocaleString()} RWF from ***${esc(x.sender_last3)}${ok?" · confirmed automatically":" · not confirmed yet (amount too low or paying phone differs). The customer can fix the number on their waiting page."}</span>`;
 }
 async function saveReq(id){const {error}=await db.from("requests").update({status:$("s_"+id).value,admin_note:$("n_"+id).value}).eq("id",id);if(error)alert(error.message);loadReq();}
 async function delReq(id){if(confirm("Delete this request for good?")){await db.from("requests").delete().eq("id",id);loadReq();}}
@@ -214,7 +221,7 @@ async function loadTools(){
    <input id="tn_${t.id}" value="${esc(t.name)}"><input id="tu_${t.id}" value="${esc(t.url)}" placeholder="Link to the tool (https://…)">
    <label><input type="checkbox" id="ta_${t.id}" ${t.active?"checked":""}>active</label><br>
    <button onclick="saveTool('${t.id}')">Save</button><button class="red sm" onclick="delTool('${t.id}')">Delete</button></div>`).join("");
-  document.querySelectorAll(".docTool").forEach(fillToolSelect);
+  document.querySelectorAll(".docTool").forEach(x=>fillToolSelect(x));
 }
 async function saveTool(id){
   const u=$("tu_"+id).value.trim(); if(u&&!safeUrl(u)){alert("The link must start with https://");return;}
@@ -226,6 +233,15 @@ async function addTool(){
   if(!k||!n){$("terr").textContent="Key and name are required.";return;} if(u&&!safeUrl(u)){$("terr").textContent="The link must start with https://";return;}
   const {error}=await db.from("tools").insert({key:k,name:n,url:u}); if(error){$("terr").textContent=error.message;return;}
   ["tl_key","tl_name","tl_url"].forEach(i=>$(i).value=""); loadTools();
+}
+async function quickTool(){
+  $("qterr").textContent=""; const n=$("qt_name").value.trim(), u=$("qt_url").value.trim();
+  if(!n||!safeUrl(u)){$("qterr").textContent="Enter a name and a link starting with https://";return;}
+  const key=n.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")||"tool";
+  let {error}=await db.from("tools").insert({key,name:n,url:u});
+  if(error)({error}=await db.from("tools").insert({key:key+"_"+Math.random().toString(36).slice(2,5),name:n,url:u}));
+  if(error){$("qterr").textContent=error.message;return;}
+  $("qt_name").value="";$("qt_url").value="";$("qterr").textContent="Tool added. Pick it in the document list.";await loadTools();
 }
 async function delTool(id){if(confirm("Delete this tool?")){await db.from("tools").delete().eq("id",id);loadTools();}}
 
