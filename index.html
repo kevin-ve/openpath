@@ -316,7 +316,15 @@ function apWait(){
   $("apBody").innerHTML=steps(3)+`<div class="card"><h3 style="margin-top:0">Checking your payment…</h3>
    <p>Your reference: <b style="font-size:1.3rem">${esc(ap.ref)}</b><br>Save it. You can come back any time with Track (reference + phone).</p>
    <p>Status: <b id="apStatus">Waiting for payment check</b></p><p class="muted">This page updates by itself. It usually takes less than a minute.</p>
-   <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ap.ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a></div>`;
+   <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ap.ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a>
+   <details style="margin-top:14px"><summary>Paid from a different number?</summary>
+    <input id="apPh2" placeholder="The number you paid from" style="margin-top:8px"><button class="btn sm" onclick="apFixPhone()">Update and recheck</button><p id="apFix" class="muted"></p></details></div>`;
+}
+async function apFixPhone(){
+  const np=$("apPh2").value.trim(); if(np.length<8){$("apFix").textContent="Enter the full number.";return;}
+  const {data}=await db.rpc("update_request_phone",{p_ref:ap.ref,p_old_phone:ap.info.phone,p_new_phone:np});
+  if(!data){$("apFix").textContent="Could not update. Message us on WhatsApp.";return;}
+  ap.info.phone=np; $("apFix").textContent="Updated. Checking…"; apCheck();
 }
 async function apCheck(){
   const ph=ap.info?ap.info.phone:ap.phone;
