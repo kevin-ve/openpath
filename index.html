@@ -129,7 +129,7 @@ footer{background:var(--navy);color:#b9c8de;padding:34px 0;margin-top:20px}foote
 </div></section>
 </main>
 
-<footer><div class="wrap"><b>OpenPath</b> – Discover opportunities. Unlock your potential</div></footer>
+<footer><div class="wrap"><b>OpenPath</b> – Discover opportunities. Unlock your potential.<br>Musanze, Rwanda</div></footer>
 <a class="wa" id="waBtn" href="#" target="_blank" rel="noopener">WhatsApp us</a>
 
 <section id="applyPage" hidden>
@@ -188,7 +188,7 @@ function setCat(c){cat=c;$("chips").querySelectorAll("button").forEach(b=>b.clas
 function docsHtml(o){
   const docs=Array.isArray(o.docs)?o.docs:[];
   if(!docs.length)return o.required_docs?`<p><b>Documents:</b> ${esc(o.required_docs)}</p>`:"";
-  return `<p><b>Documents you need:</b></p><ul class="docs">`+docs.map(d=>`<li>${esc(d.name)}</li>`).join("")+`</ul><p class="muted">Tools and full instructions unlock when you apply.</p>`;
+  return `<p><b>Documents you need:</b></p><ul class="docs">`+docs.map(d=>`<li>${esc(d.name)}</li>`).join("")+`</ul><p class="muted">Press Apply to see the full instructions.</p>`;
 }
 function drawOpps(){
   const q=$("q").value.toLowerCase();
@@ -201,7 +201,7 @@ function drawOpps(){
    <div class="row"><span><span class="tag" style="background:${c}1f;color:${c}">${esc(o.icon||"")} ${esc(o.category)}</span>${o.badge?` <span class="bdg" style="background:${c}">${esc(o.badge)}</span>`:""}</span>
    <span class="days ${d!==null&&d<=7?"soon":""}">${d===null?"Open":d==0?"Last day":d+" days left"}</span></div>
    <h3>${esc(o.title)}</h3><p class="desc">${esc(o.description)}</p>
-   <div class="meta">${esc(o.location||"")}${o.verified_at?" · Verified "+esc(o.verified_at):""}${o.price>0?" · Help fee "+Number(o.price).toLocaleString()+" RWF":""}</div>
+   <div class="meta">${esc(o.location||"")}${o.verified_at?" · Verified "+esc(o.verified_at):""}${o.price>0?" · Support from "+Number(o.price).toLocaleString()+" RWF":""}</div>
    <details><summary>What you need to apply</summary><p><b>Eligibility:</b> ${esc(o.eligibility)}</p><p><b>Benefits:</b> ${esc(o.benefits)}</p>${docsHtml(o)}${secs}</details>
    <div class="actions"><button class="btn sm" style="background:${c}" onclick="openApply('${esc(o.id)}')">${esc(o.cta_text||"Apply")}</button></div></div>`;}).join(""):'<p class="muted">No opportunities found yet. Check back soon.</p>';
 }
@@ -249,21 +249,40 @@ async function track(){
     if(p.data){ window._pk=p.data; $("tOut").innerHTML+='<br><br><button class="btn" onclick="openPack()">Open apply resources</button>'; } }
 }
 
-/* ---------- Apply page: details -> payment -> locked resources ---------- */
+/* ---------- Apply flow: instructions -> choose (own or paid support) -> tools + official link ---------- */
 let ap=null, apTimer=null;
 function showApply(title){ $("apTitle").textContent=title||""; $("applyPage").hidden=false; $("applyPage").scrollTop=0; document.body.style.overflow="hidden"; }
 function closeApply(){ clearInterval(apTimer); $("applyPage").hidden=true; document.body.style.overflow=""; }
-function steps(n){ return `<div class="steps3"><span class="${n==1?"on":""}">1 Your details</span><span class="${n==2?"on":""}">2 Payment</span><span class="${n==3?"on":""}">3 Apply resources</span></div>`; }
-function openApply(id){
-  const o=opps.find(x=>x.id==id); if(!o)return; ap={o,info:null}; showApply(o.title);
-  if(!(o.price>0)){ $("apBody").innerHTML=`<div class="card"><h3 style="margin-top:0">Price not set yet</h3><p>Message us and we will give you the price for this application.</p><a class="btn" href="https://wa.me/${WA}" target="_blank" rel="noopener">WhatsApp us</a></div>`; return; }
-  apForm();
+function steps(n){ return `<div class="steps3"><span class="${n==1?"on":""}">1 How to apply</span><span class="${n==2?"on":""}">2 Your choice</span><span class="${n==3?"on":""}">3 Support</span></div>`; }
+function openApply(id){ const o=opps.find(x=>x.id==id); if(!o)return; ap={o,info:null}; showApply(o.title); apIntro(); }
+
+function apIntro(){
+  const o=ap.o, docs=(Array.isArray(o.docs)?o.docs:[]).map(d=>`<li>${esc(d.name)}</li>`).join("");
+  $("applyPage").scrollTop=0;
+  $("apBody").innerHTML=steps(1)+`<div class="card"><h3 style="margin-top:0">How to apply</h3>
+   <p class="muted">${esc(o.category)} · Deadline: ${esc(o.deadline||"Open")}</p>
+   <div style="white-space:pre-wrap">${esc(o.instructions||"Detailed instructions are coming soon. You can still continue, or message us on WhatsApp.")}</div></div>
+   ${docs?`<div class="card"><h3 style="margin-top:0">Documents you will need</h3><ul class="docs">${docs}</ul></div>`:""}
+   <button class="btn" onclick="apChoose()">Continue</button>`;
+}
+function apChoose(){
+  const o=ap.o, link=safeUrl(o.link), hasPrice=o.price>0;
+  $("applyPage").scrollTop=0;
+  $("apBody").innerHTML=steps(2)+`<h3 style="margin:0 0 12px">How do you want to apply?</h3>
+   <div class="card"><h3 style="margin-top:0">Apply on your own <span class="price" style="font-size:1.1rem">Free</span></h3>
+    <p class="muted">You prepare your documents yourself and apply on the official website.</p>
+    ${link?`<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Go to the official application</a>`:`<p class="muted">The official link is not available yet. <a href="https://wa.me/${WA}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`}</div>
+   <div class="card" style="border:2px solid var(--blue)"><h3 style="margin-top:0">Get support ${hasPrice?`<span class="price" style="font-size:1.1rem">${Number(o.price).toLocaleString()} RWF</span>`:""}</h3>
+    <p class="muted">We help you apply. You get:</p>
+    <ul class="docs"><li>Tools to create each document you need (CV, motivation letter and more)</li><li>Guides and sample resources</li><li>Direct support from us on WhatsApp</li><li>The official link to submit your finished documents</li></ul>
+    ${hasPrice?`<button class="btn" onclick="apForm()">Get support</button>`:`<a class="btn" href="https://wa.me/${WA}" target="_blank" rel="noopener">Ask us for the price</a>`}</div>
+   <button class="btn ghost" onclick="apIntro()">Back</button>`;
 }
 function apForm(){
-  const o=ap.o, i=ap.info||{};
-  $("apBody").innerHTML=steps(1)+`<div class="card"><h3 style="margin-top:0">${esc(o.title)}</h3>
-   <p class="muted">${esc(o.category)} · Deadline: ${esc(o.deadline||"Open")} · Help fee: <b>${Number(o.price).toLocaleString()} RWF</b></p>
-   <p>Fill in your details and pay. Then you unlock the step-by-step instructions, all the resources and the tools you need to apply.</p></div>
+  const o=ap.o, i=ap.info||{}; $("applyPage").scrollTop=0;
+  $("apBody").innerHTML=steps(3)+`<div class="card"><h3 style="margin-top:0">${esc(o.title)}</h3>
+   <p class="muted">Support fee: <b>${Number(o.price).toLocaleString()} RWF</b></p>
+   <p>Fill in your details and pay. Then you unlock the tools to create your documents, the resources and direct support.</p></div>
    <form class="card" onsubmit="apNext(event)">
     <input name="name" placeholder="Full name" value="${esc(i.name)}" required>
     <input name="phone" placeholder="Your MoMo phone number (the one you pay from)" value="${esc(i.phone)}" required>
@@ -271,7 +290,7 @@ function apForm(){
     <select name="pref"><option value="whatsapp">Reply on WhatsApp</option><option value="telegram">Reply on Telegram</option><option value="email">Reply by email</option></select>
     <input name="doc" placeholder="Link to your documents (optional)" value="${esc(i.doc)}">
     <textarea name="msg" rows="2" placeholder="Anything we should know? (optional)">${esc(i.msg)}</textarea>
-    <button class="btn">Continue to payment</button></form>`;
+    <button class="btn">Continue to payment</button> <button class="btn ghost" type="button" onclick="apChoose()">Back</button></form>`;
 }
 function apNext(e){
   e.preventDefault(); const f=e.target;
@@ -279,10 +298,10 @@ function apNext(e){
   $("applyPage").scrollTop=0; apPay();
 }
 function apPay(){
-  $("apBody").innerHTML=steps(2)+`<form class="card" onsubmit="apSubmit(event)"><h3 style="margin-top:0">Pay ${Number(ap.o.price).toLocaleString()} RWF</h3>
+  $("apBody").innerHTML=steps(3)+`<form class="card" onsubmit="apSubmit(event)"><h3 style="margin-top:0">Pay ${Number(ap.o.price).toLocaleString()} RWF</h3>
    <div class="note">Send <b>${Number(ap.o.price).toLocaleString()} RWF</b> with MoMo to <b>${esc(MOMO)}</b>, from the number <b>${esc(ap.info.phone)}</b>. Then type the transaction ID (FT Id) from the MoMo SMS. Your payment is confirmed automatically.</div>
    <input name="txn" placeholder="MoMo transaction ID (FT Id)" required>
-   <button class="btn" id="apBtn">I have paid, unlock</button> <button class="btn ghost" type="button" onclick="apForm()">Back</button><p id="apErr" class="muted"></p></form>`;
+   <button class="btn" id="apBtn">I have paid, unlock support</button> <button class="btn ghost" type="button" onclick="apForm()">Back</button><p id="apErr" class="muted"></p></form>`;
 }
 async function apSubmit(e){
   e.preventDefault(); const i=ap.info, txn=e.target.txn.value;
@@ -300,23 +319,26 @@ function apWait(){
    <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, my request is "+ap.ref)}" target="_blank" rel="noopener">Message us on WhatsApp</a></div>`;
 }
 async function apCheck(){
-  const {data}=await db.rpc("get_apply_pack",{p_ref:ap.ref,p_phone:ap.info?ap.info.phone:ap.phone});
+  const ph=ap.info?ap.info.phone:ap.phone;
+  const {data}=await db.rpc("get_apply_pack",{p_ref:ap.ref,p_phone:ph});
   if(data){ clearInterval(apTimer); apPack(data); return; }
-  const t=await db.rpc("track_request",{p_ref:ap.ref,p_phone:ap.info?ap.info.phone:ap.phone}), r=t.data&&t.data[0];
+  const t=await db.rpc("track_request",{p_ref:ap.ref,p_phone:ph}), r=t.data&&t.data[0];
   if(r&&$("apStatus"))$("apStatus").textContent=LABEL[r.status]||r.status;
   if(r&&r.status=="rejected")clearInterval(apTimer);
 }
 function openPack(){ ap={ref:$("tRef").value.trim().toUpperCase(),phone:$("tPhone").value.trim()}; showApply(window._pk.title); apPack(window._pk); }
 function apPack(d){
-  const docs=(d.docs||[]).map(x=>`<li>${esc(x.name)}${safeUrl(x.tool_url)?` <a class="tl" href="${esc(x.tool_url)}" target="_blank" rel="noopener">Create with ${esc(x.tool_name)}</a>`:""}</li>`).join("");
+  const docs=(d.docs||[]).map(x=>`<li>${esc(x.name)}${safeUrl(x.tool_url)?` <a class="tl" href="${esc(x.tool_url)}" target="_blank" rel="noopener">Create with ${esc(x.tool_name)}</a>`:` <span class="muted">· message us on WhatsApp for this one</span>`}</li>`).join("");
   const res=(d.resources||[]).filter(x=>safeUrl(x.url)).map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("");
   $("applyPage").scrollTop=0;
   $("apBody").innerHTML=steps(3)+`<div class="okbox">Payment confirmed. Your reference: <b>${esc(ap.ref)}</b>. Save it to come back from Track.</div>
-   <div class="card"><h3 style="margin-top:0">How to apply</h3><div style="white-space:pre-wrap">${esc(d.instructions||"Instructions are being added. Message us on WhatsApp and we will guide you.")}</div></div>
-   ${docs?`<div class="card"><h3 style="margin-top:0">Documents you need</h3><ul class="docs">${docs}</ul></div>`:""}
-   ${res?`<div class="card"><h3 style="margin-top:0">Resources</h3><ul class="docs">${res}</ul></div>`:""}
-   ${safeUrl(d.apply_link)?`<p><a class="btn" href="${esc(d.apply_link)}" target="_blank" rel="noopener">Go to the official application</a></p>`:""}
-   <p class="muted">Need help with your documents? <a href="https://wa.me/${WA}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`;
+   <div class="card"><h3 style="margin-top:0">Step 1: Create your documents</h3>
+    ${docs?`<ul class="docs">${docs}</ul>`:'<p class="muted">No documents are listed for this opportunity.</p>'}</div>
+   ${res?`<div class="card"><h3 style="margin-top:0">Guides and resources</h3><ul class="docs">${res}</ul></div>`:""}
+   <div class="card"><h3 style="margin-top:0">Step 2: Submit on the official website</h3><p class="muted">When your documents are ready, submit them here.</p>
+    ${safeUrl(d.apply_link)?`<a class="btn" href="${esc(d.apply_link)}" target="_blank" rel="noopener">Go to the official application</a>`:'<p class="muted">The official link is not available yet. Message us.</p>'}</div>
+   <div class="card"><h3 style="margin-top:0">Need help?</h3><p class="muted">Send us your draft or ask any question.</p>
+    <a class="btn ghost" href="https://wa.me/${WA}?text=${encodeURIComponent("Hello OpenPath, I need support. My reference is "+ap.ref)}" target="_blank" rel="noopener">Chat with us on WhatsApp</a></div>`;
 }
 load();
 </script>
